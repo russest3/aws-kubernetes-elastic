@@ -32,4 +32,6 @@ ssh localhost -p 2226   # for control plane node IP = 10.0.0.6
 ssh localhost -p 2227   # for control plane node IP = 10.0.0.7
 </pre>
 
+The Jumpbox can be accessed via the Azure Portal
+Need to get screenshots of this process
 
