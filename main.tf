@@ -49,96 +49,96 @@ resource "azurerm_network_interface" "jumpbox" {
     }
 }
 
-# resource "azurerm_network_interface" "c1-cp1" {
-#   name                = "${var.env}-c1-cp1-nic1"
-#   location            = azurerm_resource_group.test.location
-#   resource_group_name = azurerm_resource_group.test.name
+resource "azurerm_network_interface" "c1-cp1" {
+  name                = "${var.env}-c1-cp1-nic1"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
 
-#   ip_configuration {
-#     name                          = "c1-cp1-nic1"
-#     subnet_id                     = azurerm_subnet.internal.id
-#     private_ip_address_allocation = "Dynamic"
-#   }
-# }
+  ip_configuration {
+    name                          = "c1-cp1-nic1"
+    subnet_id                     = azurerm_subnet.internal.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
 
-# resource "azurerm_network_interface" "c1-node1" {
-#   name                = "${var.env}-c1-node1-nic1"
-#   location            = azurerm_resource_group.test.location
-#   resource_group_name = azurerm_resource_group.test.name
+resource "azurerm_network_interface" "c1-node1" {
+  name                = "${var.env}-c1-node1-nic1"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
 
-#   ip_configuration {
-#     name                          = "c1-node1-nic1"
-#     subnet_id                     = azurerm_subnet.internal.id
-#     private_ip_address_allocation = "Dynamic"
-#   }
-# }
+  ip_configuration {
+    name                          = "c1-node1-nic1"
+    subnet_id                     = azurerm_subnet.internal.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
 
-# resource "azurerm_network_interface" "c1-node2" {
-#   name                = "${var.env}-c1-node2-nic1"
-#   location            = azurerm_resource_group.test.location
-#   resource_group_name = azurerm_resource_group.test.name
+resource "azurerm_network_interface" "c1-node2" {
+  name                = "${var.env}-c1-node2-nic1"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
 
-#   ip_configuration {
-#     name                          = "c1-node2-nic1"
-#     subnet_id                     = azurerm_subnet.internal.id
-#     private_ip_address_allocation = "Dynamic"
-#   }
-# }
+  ip_configuration {
+    name                          = "c1-node2-nic1"
+    subnet_id                     = azurerm_subnet.internal.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
 
-# resource "azurerm_network_interface" "c1-node3" {
-#   name                = "${var.env}-c1-node3-nic1"
-#   location            = azurerm_resource_group.test.location
-#   resource_group_name = azurerm_resource_group.test.name
+resource "azurerm_network_interface" "c1-node3" {
+  name                = "${var.env}-c1-node3-nic1"
+  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.test.name
 
-#   ip_configuration {
-#     name                          = "c1-node3-nic1"
-#     subnet_id                     = azurerm_subnet.internal.id
-#     private_ip_address_allocation = "Dynamic"
-#   }
-# }
+  ip_configuration {
+    name                          = "c1-node3-nic1"
+    subnet_id                     = azurerm_subnet.internal.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
 ##############################################################
 
 
 
 
 ############### CONTROL PLANE NODE #####################
-# resource "azurerm_linux_virtual_machine" "c1-cp1" {
-#   name                  = "${var.env}-${var.vmname}"
-#   location              = azurerm_resource_group.test.location
-#   resource_group_name   = azurerm_resource_group.test.name
-#   network_interface_ids = [azurerm_network_interface.c1-cp1.id]
-#   # size                  = "Standard_DS1_v2"
-#   size                  = "Standard_A2_v2"
-#   admin_username        = var.admin_name
-#   admin_password        = var.admin_pw
-#   disable_password_authentication = false
-#   custom_data = filebase64("script.tftpl")
-#   admin_ssh_key {
-#     username = var.admin_name
-#     public_key = file("~/.ssh/id_rsa.pub")
-#   }
+resource "azurerm_linux_virtual_machine" "c1-cp1" {
+  name                  = "${var.env}-${var.vmname}"
+  location              = azurerm_resource_group.test.location
+  resource_group_name   = azurerm_resource_group.test.name
+  network_interface_ids = [azurerm_network_interface.c1-cp1.id]
+  # size                  = "Standard_DS1_v2"
+  size                  = "Standard_A2_v2"
+  admin_username        = var.admin_name
+  admin_password        = var.admin_pw
+  disable_password_authentication = false
+  custom_data = filebase64("script.tftpl")
+  admin_ssh_key {
+    username = var.admin_name
+    public_key = file("~/.ssh/id_rsa.pub")
+  }
 
-#   lifecycle {
-#     ignore_changes = [ 
-#       admin_password,
-#      ]
-#   }
+  lifecycle {
+    ignore_changes = [ 
+      admin_password,
+     ]
+  }
 
-#   source_image_reference {
-#     publisher           = var.image_publisher
-#     offer               = var.image_offer
-#     sku                 = var.image_sku
-#     version             = var.image_version
-#   }
-#   os_disk {
-#     caching              = "ReadWrite"
-#     storage_account_type = "Standard_LRS"
-#   }
+  source_image_reference {
+    publisher           = var.image_publisher
+    offer               = var.image_offer
+    sku                 = var.image_sku
+    version             = var.image_version
+  }
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
-#   tags = {
-#     environment = var.env
-#   }
-# }
+  tags = {
+    environment = var.env
+  }
+}
 #######################################
 
 ####### BASTION HOST  ################################
@@ -247,61 +247,61 @@ resource "azurerm_windows_virtual_machine" "jumpbox" {
 
 
 ################# WORKER NODE C1-NODE1 ############################
-# resource "azurerm_linux_virtual_machine" "c1-node1" {
-#   name                  = "${var.env}-${var.workernode1_name}"
-#   location              = azurerm_resource_group.test.location
-#   resource_group_name   = azurerm_resource_group.test.name
-#   network_interface_ids = [azurerm_network_interface.c1-node1.id]
-#   custom_data = filebase64("script.tftpl")
-#   size                  = "Standard_A2_v2"
-#   admin_username        = var.admin_name
-#   admin_password        = var.admin_pw
-#   disable_password_authentication = false
-#   admin_ssh_key {
-#     username = var.admin_name
-#     public_key = file("~/.ssh/id_rsa.pub")
-#   }
+resource "azurerm_linux_virtual_machine" "c1-node1" {
+  name                  = "${var.env}-${var.workernode1_name}"
+  location              = azurerm_resource_group.test.location
+  resource_group_name   = azurerm_resource_group.test.name
+  network_interface_ids = [azurerm_network_interface.c1-node1.id]
+  custom_data = filebase64("script.tftpl")
+  size                  = "Standard_A2_v2"
+  admin_username        = var.admin_name
+  admin_password        = var.admin_pw
+  disable_password_authentication = false
+  admin_ssh_key {
+    username = var.admin_name
+    public_key = file("~/.ssh/id_rsa.pub")
+  }
 
-#   lifecycle {
-#     ignore_changes = [ 
-#       admin_password,
-#      ]
-#   }
+  # lifecycle {
+  #   ignore_changes = [ 
+  #     admin_password,
+  #    ]
+  # }
 
-#   source_image_reference {
-#     publisher           = var.image_publisher
-#     offer               = var.image_offer
-#     sku                 = var.image_sku
-#     version             = var.image_version
-#   }
-#   os_disk {
-#     caching              = "ReadWrite"
-#     storage_account_type = "Standard_LRS"
-#   }
+  source_image_reference {
+    publisher           = var.image_publisher
+    offer               = var.image_offer
+    sku                 = var.image_sku
+    version             = var.image_version
+  }
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
-#   tags = {
-#     environment = var.env
-#   }
-# }
+  tags = {
+    environment = var.env
+  }
+}
 #################################################################
 
 
 
 ################# WORKER NODE C1-NODE2 ############################
-# resource "azurerm_linux_virtual_machine" "c1-node2" {
-#   name                  = "${var.env}-${var.workernode2_name}"
-#   location              = azurerm_resource_group.test.location
-#   resource_group_name   = azurerm_resource_group.test.name
-#   network_interface_ids = [azurerm_network_interface.c1-node2.id]
-#   custom_data = filebase64("script.tftpl")
-#   size                  = "Standard_A2_v2"
-#   admin_username        = var.admin_name
-#   admin_password        = var.admin_pw
-#   disable_password_authentication = false
-#   admin_ssh_key {
-#     username = var.admin_name
-#     public_key = file("~/.ssh/id_rsa.pub")
-#   }
+resource "azurerm_linux_virtual_machine" "c1-node2" {
+  name                  = "${var.env}-${var.workernode2_name}"
+  location              = azurerm_resource_group.test.location
+  resource_group_name   = azurerm_resource_group.test.name
+  network_interface_ids = [azurerm_network_interface.c1-node2.id]
+  custom_data = filebase64("script.tftpl")
+  size                  = "Standard_A2_v2"
+  admin_username        = var.admin_name
+  admin_password        = var.admin_pw
+  disable_password_authentication = false
+  admin_ssh_key {
+    username = var.admin_name
+    public_key = file("~/.ssh/id_rsa.pub")
+  }
 
 #   lifecycle {
 #     ignore_changes = [ 
@@ -309,40 +309,40 @@ resource "azurerm_windows_virtual_machine" "jumpbox" {
 #      ]
 #   }
 
-#   source_image_reference {
-#     publisher           = var.image_publisher
-#     offer               = var.image_offer
-#     sku                 = var.image_sku
-#     version             = var.image_version
-#   }
-#   os_disk {
-#     caching              = "ReadWrite"
-#     storage_account_type = "Standard_LRS"
-#   }
+  source_image_reference {
+    publisher           = var.image_publisher
+    offer               = var.image_offer
+    sku                 = var.image_sku
+    version             = var.image_version
+  }
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
-#   tags = {
-#     environment = var.env
-#   }
-# }
+  tags = {
+    environment = var.env
+  }
+}
 #################################################################
 
 
 
 ################# WORKER NODE C1-NODE3 ############################
-# resource "azurerm_linux_virtual_machine" "c1-node3" {
-#   name                  = "${var.env}-${var.workernode3_name}"
-#   location              = azurerm_resource_group.test.location
-#   resource_group_name   = azurerm_resource_group.test.name
-#   network_interface_ids = [azurerm_network_interface.c1-node3.id]
-#   custom_data = filebase64("script.tftpl")
-#   size                  = "Standard_A2_v2"
-#   admin_username        = var.admin_name
-#   admin_password        = var.admin_pw
-#   disable_password_authentication = false
-#   admin_ssh_key {
-#     username = var.admin_name
-#     public_key = file("~/.ssh/id_rsa.pub")
-#   }
+resource "azurerm_linux_virtual_machine" "c1-node3" {
+  name                  = "${var.env}-${var.workernode3_name}"
+  location              = azurerm_resource_group.test.location
+  resource_group_name   = azurerm_resource_group.test.name
+  network_interface_ids = [azurerm_network_interface.c1-node3.id]
+  custom_data = filebase64("script.tftpl")
+  size                  = "Standard_A2_v2"
+  admin_username        = var.admin_name
+  admin_password        = var.admin_pw
+  disable_password_authentication = false
+  admin_ssh_key {
+    username = var.admin_name
+    public_key = file("~/.ssh/id_rsa.pub")
+  }
 
 #   lifecycle {
 #     ignore_changes = [ 
@@ -350,19 +350,19 @@ resource "azurerm_windows_virtual_machine" "jumpbox" {
 #      ]
 #   }
 
-#   source_image_reference {
-#     publisher           = var.image_publisher
-#     offer               = var.image_offer
-#     sku                 = var.image_sku
-#     version             = var.image_version
-#   }
-#   os_disk {
-#     caching              = "ReadWrite"
-#     storage_account_type = "Standard_LRS"
-#   }
+  source_image_reference {
+    publisher           = var.image_publisher
+    offer               = var.image_offer
+    sku                 = var.image_sku
+    version             = var.image_version
+  }
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
-#    tags = {
-#     environment = var.env
-#   }
-# }
+   tags = {
+    environment = var.env
+  }
+}
 #################################################################

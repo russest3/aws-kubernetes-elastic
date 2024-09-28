@@ -5,13 +5,13 @@
   gather_facts: false
   become: false
 
-  vars_prompt:
-    - name: admin_name
-      prompt: 'Enter name for service account'
-      private: false
-    - name: admin_pw
-      prompt: 'Enter password for service account'
-      private: false
+  # vars_prompt:
+  #   - name: admin_name
+  #     prompt: 'Enter name for service account'
+  #     private: false
+  #   - name: admin_pw
+  #     prompt: 'Enter password for service account'
+  #     private: false
 
   vars_files:
     - common_vars.yml
@@ -34,54 +34,54 @@
         - "{{ true if lookup('ansible.builtin.env', 'ARM_TENANT_ID') is defined else false }}"
       failed_when: "'false' in _dep_check_results"
 
-    - name: 'Run terraform init'
-      ansible.builtin.shell: "terraform init"
-      changed_when: false
-      register: _init_results
-      failed_when: "_init_results.rc > 0"
+    # - name: 'Run terraform init'
+    #   ansible.builtin.shell: "terraform init"
+    #   changed_when: false
+    #   register: _init_results
+    #   failed_when: "_init_results.rc > 0"
 
-    - name: 'Run terraform validate'
-      ansible.builtin.shell: "terraform validate"
-      changed_when: false
-      register: _validate_results
-      failed_when: "_validate_results.rc > 0"
+    # - name: 'Run terraform validate'
+    #   ansible.builtin.shell: "terraform validate"
+    #   changed_when: false
+    #   register: _validate_results
+    #   failed_when: "_validate_results.rc > 0"
 
-    - name: 'Run terraform plan'
-      ansible.builtin.shell: "terraform plan -out=tfplan.out -var=admin_pw='{{ admin_pw }}' -var=admin_name='{{ admin_name }}'"
-      changed_when: false
-      register: _plan_results
-      failed_when: "_plan_results.rc > 0"
+    # - name: 'Run terraform plan'
+    #   ansible.builtin.shell: "terraform plan -out=tfplan.out -var=admin_pw='{{ admin_pw }}' -var=admin_name='{{ admin_name }}'"
+    #   changed_when: false
+    #   register: _plan_results
+    #   failed_when: "_plan_results.rc > 0"
 
-    - name: 'Plan results:'
-      ansible.builtin.debug:
-        var: _plan_results.stdout
+    # - name: 'Plan results:'
+    #   ansible.builtin.debug:
+    #     var: _plan_results.stdout
 
-    - name: 'Run terraform apply'
-      ansible.builtin.shell: "terraform apply -auto-approve 'tfplan.out'"
-      changed_when: false
-      register: _apply_results
-      failed_when: "_apply_results.rc > 0"
+    # - name: 'Run terraform apply'
+    #   ansible.builtin.shell: "terraform apply -auto-approve 'tfplan.out'"
+    #   changed_when: false
+    #   register: _apply_results
+    #   failed_when: "_apply_results.rc > 0"
 
-    - name: 'Apply results:'
-      ansible.builtin.debug:
-        var: _plan_results.stdout
+    # - name: 'Apply results:'
+    #   ansible.builtin.debug:
+    #     var: _plan_results.stdout
 
-    - name: 'Wait for bastion host creation to complete'
-      azure.azcollection.azure_rm_resource_info:
-        api_version: '2024-03-01'
-        resource_group: "{{ resource_group }}"
-        provider: 'network'
-        resource_type: 'bastionHosts'
-        resource_name: 'test-bh'
-      register: _bh_status
-      until: "_bh_status | json_query(_query) == 'Succeeded'"
-      retries: 20
-      delay: 30
-      vars:
-        _query: "response[].properties.provisioningState | [0]"
+    # - name: 'Wait for bastion host creation to complete'
+    #   azure.azcollection.azure_rm_resource_info:
+    #     api_version: '2024-03-01'
+    #     resource_group: "{{ resource_group }}"
+    #     provider: 'network'
+    #     resource_type: 'bastionHosts'
+    #     resource_name: 'test-bh'
+    #   register: _bh_status
+    #   until: "_bh_status | json_query(_query) == 'Succeeded'"
+    #   retries: 20
+    #   delay: 30
+    #   vars:
+    #     _query: "response[].properties.provisioningState | [0]"
 
-    - debug:
-        var: _bh_status
+    # - debug:
+    #     var: _bh_status
 
     - name: 'Get info for test-c1-cp1-nic1'
       azure.azcollection.azure_rm_resource_info:
@@ -181,7 +181,7 @@
   gather_facts: true
   become: true
   roles:
-    - all-nodes
+    # - all-nodes
     - control-plane-node
   vars:
     ansible_python_interpreter: '/usr/bin/python'
