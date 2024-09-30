@@ -1,21 +1,11 @@
 ---
-- name: 'Copy over the manifest files'
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "./{{ item }}"
-    owner: "{{ svc_acct_name}}"
-    group: "{{ svc_acct_name}}"
-    mode: '0640'
-  loop:
-    - 'argocd-namespace.yaml'
-    - 'install.yaml'
-
-- name: 'Apply the manifests'
-  ansible.builtin.shell: "kubectl apply -f {{ item }}"
+- name: 'Create the argocd namespace'
+  ansible.builtin.shell: "kubectl create namespace argocd"
   changed_when: false
-  loop:
-    - 'argocd-namespace.yaml'
-    - 'install.yaml'
+
+- name: 'Apply the argocd manifest'
+  ansible.builtin.shell: "kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+  changed_when: false
 
 - name: 'Pause 1 minute to allow pods to startup'
   ansible.builtin.pause:
@@ -43,7 +33,7 @@
   changed_when: false
 
 - name: 'Get the password for the admin account'
-  ansible.builtin.shell: "admin initial-password -n argocd | head -1"
+  ansible.builtin.shell: "argocd admin initial-password -n argocd | head -1"
   changed_when: false
   register: _argocd_pw
 
@@ -73,7 +63,7 @@
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      argocd-linux-amd64 login {{ _argocd_node_ip.stdout }}:{{ _argocd_node_port.stdout }} --insecure --username admin --password {{ _argocd_pw.stdout }}
+      argocd login {{ _argocd_node_ip.stdout }}:{{ _argocd_node_port.stdout }} --insecure --username admin --password {{ _argocd_pw.stdout }}
     executable: /bin/bash
   changed_when: false
 
@@ -95,5 +85,5 @@
     minutes: 1
 
 - debug:
-    msg: "You can now access the argocd cluster from the Windows 10 Jumpbox at https://{{ _netint_c1_cp1_nic1 }}:{{ _argocd_node_ip.stdout }}"
+    msg: "You can now access the argocd cluster from the Windows 10 Jumpbox at https://{{ _netint_c1_cp1_nic1_ip }}:{{ _argocd_node_ip.stdout }}"
 ...
