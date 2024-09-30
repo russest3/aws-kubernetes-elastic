@@ -7,41 +7,93 @@
     group: "{{ svc_acct_name}}"
     mode: '0640'
   loop:
-    - 
-    # - 'nginx-deployment.yaml'
-    # - 'nginx-service.yaml'
+    - 'argocd-namespace.yaml'
+    - 'install.yaml'
 
 - name: 'Apply the manifests'
   ansible.builtin.shell: "kubectl apply -f {{ item }}"
   changed_when: false
   loop:
-    # - 'nginx-deployment.yaml'
-    # - 'nginx-service.yaml'
+    - 'argocd-namespace.yaml'
+    - 'install.yaml'
 
 - name: 'Pause 1 minute to allow pods to startup'
   ansible.builtin.pause:
     minutes: 1
 
-- name: 'Get Pods'
-  ansible.builtin.shell: "kubectl get pods -n cicd-pipeline"
+- name: 'Download the argocd binary'
+  ansible.builtin.get_url:
+    url: 'https://github.com/argoproj/argo-cd/releases/download/v2.10.17/argocd-linux-amd64'
+    dest: '/usr/bin/argocd'
+    mode: '+x'
+    validate_certs: false
+  become: true
+
+- name: 'Set context'
+  ansible.builtin.shell: "kubectl config set-context --current --namespace=argocd"
+  register: _context
   changed_when: false
-  register: _shell_results
 
-- name: 'Show output of Pods'
+- name: 'Patch the argocd service to use NodePort'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+    executable: /bin/bash
+  changed_when: false
+
+- name: 'Get the password for the admin account'
+  ansible.builtin.shell: "admin initial-password -n argocd | head -1"
+  changed_when: false
+  register: _argocd_pw
+
+- name: 'Display the password for the admin account'
   ansible.builtin.debug:
-    var: _shell_results.stdout
+    var: _argocd_pw
 
-- name: 'Verify Pods are Ready'
-  ansible.builtin.assert:
-    that: "'Running' in _shell_results.stdout"
-    fail_msg: "Pods are Showing Not Ready"
-    success_msg: "Pods are running"
+- name: 'Get the NodePort assigned'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl get service argocd-server -n argocd -o yaml | grep nodePort | sed -n '2 p' | awk '{ print $2 }'
+    executable: /bin/bash
+  register: _argocd_node_port
+  changed_when: false
 
-- name: 'Get the service IP address'
-  ansible.builtin.shell: "kubectl get service nginx-service -n cicd-pipeline | grep nginx | awk '{ print $3 }'"
-  register: _nginx_ip
+- name: 'Get the node that is running the API server'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      _pod=`kubectl get pods -n argocd | grep argocd-server | awk '{ print $1 }'` && kubectl get pods ${_pod} -n argocd -o yaml | grep nodeName | awk '{ print $2 }'
+    executable: /bin/bash
+  register: _argocd_node_ip
+  changed_when: false
 
-- name: 'Display the nginx IP address'
-  ansible.builtin.debug:
-    var: _nginx_ip
+- name: 'Login to the argocd API'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      argocd-linux-amd64 login {{ _argocd_node_ip.stdout }}:{{ _argocd_node_port.stdout }} --insecure --username admin --password {{ _argocd_pw.stdout }}
+    executable: /bin/bash
+  changed_when: false
+
+- name: 'Get the context name'
+  ansible.builtin.shell: "kubectl config get-contexts -o name"
+  changed_when: false
+  register: _context_name
+
+- name: 'Add the argocd cluster to the context'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      argocd cluster add {{ _context_name.stdout }} -y
+    executable: /bin/bash
+  changed_when: false
+
+- name: 'Pause for one minute to allow cluster pods to come online'
+  ansible.builtin.pause:
+    minutes: 1
+
+- debug:
+    msg: "You can now access the argocd cluster from the Windows 10 Jumpbox at https://{{ _netint_c1_cp1_nic1 }}:{{ _argocd_node_ip.stdout }}"
 ...
