@@ -158,30 +158,30 @@
     - debug:
         var: _test_c1_node3_nic1_ip
 
-- name: 'Configure Tunnel'
-  hosts: localhost
-  gather_facts: false
-  connection: local
-  tasks:
-    - name: 'Kill Tunnel'
-      ansible.builtin.shell: "kill `ps -ef | grep 'python3.9 -sm' | head -1 | awk '{ print $2 }'`"
-      changed_when: false
-      ignore_errors: true
+# - name: 'Configure Tunnel'
+#   hosts: localhost
+#   gather_facts: false
+#   connection: local
+#   tasks:
+#     - name: 'Kill Tunnel'
+#       ansible.builtin.shell: "kill `ps -ef | grep 'python3.9 -sm' | head -1 | awk '{ print $2 }'`"
+#       changed_when: false
+#       ignore_errors: true
 
-    - name: 'Setup Tunnel'
-      ansible.builtin.shell: "az network bastion tunnel --name 'test-bh' --resource-group 'test' --target-ip-address '{{ _test_c1_cp1_nic1_ip }}' --resource-port '22' --port '{{ '222' + _test_c1_cp1_nic1_ip.split('.')[-1] }}' << 0x0A 1>/dev/null &"
-      changed_when: false
+#     - name: 'Setup Tunnel'
+#       ansible.builtin.shell: "az network bastion tunnel --name 'test-bh' --resource-group 'test' --target-ip-address '{{ _test_c1_cp1_nic1_ip }}' --resource-port '22' --port '{{ '222' + _test_c1_cp1_nic1_ip.split('.')[-1] }}' << 0x0A 1>/dev/null &"
+#       changed_when: false
 
-    - name: 'Pause 10s'
-      ansible.builtin.pause:
-        seconds: '10'
+#     - name: 'Pause 10s'
+#       ansible.builtin.pause:
+#         seconds: '10'
 
 - name: 'Configure c1-cp1'
   hosts: localhost
   gather_facts: true
   become: true
   roles:
-    # - all-nodes
+    - all-nodes
     - control-plane-node
   vars:
     ansible_python_interpreter: '/usr/bin/python'
@@ -330,7 +330,31 @@
       ansible.builtin.pause:
         seconds: '10'
 
-- name: 'Beginning installation of ElasticSearch and Kubernetes Dashboard'
+# - name: 'Beginning installation of ElasticSearch'
+#   hosts: 'localhost'
+#   become: false
+#   gather_facts: true
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   roles:
+#     - install-elastic
+
+# - name: 'Beginning installation of Kubernetes Dashboard'
+#   hosts: 'localhost'
+#   become: false
+#   gather_facts: true
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   roles:
+#     - install-dashboard
+
+- name: 'Beginning installation of CI/CD Pipeline'
   hosts: 'localhost'
   become: false
   gather_facts: true
@@ -339,9 +363,6 @@
     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
   vars_files:
     - common_vars.yml
-  environment:
-    ELASTIC_PASSWORD: 'test'
   roles:
-    - install-elastic
-    - install-dashboard
+    - cicd-pipeline
 ...
