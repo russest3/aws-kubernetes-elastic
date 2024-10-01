@@ -1,8 +1,10 @@
 ---
 svc_acct_name: 'srussel0'
-kubernetes_version: '1.31.1-1.1'
-kubernetes_version_short: '1.31'
-kubernetes_version_medium: '1.31.1'
+kubernetes_version_full: '1.30.5-1.1'
+kubernetes_version_short: '1.30'
+kubernetes_version: '1.30.5'
+rancher_version: '2.9.2'
+cert_manager_version: '1.15.3'
 cpn_proxy: 'localhost:2224'
 node1_proxy: 'localhost:2226'
 node2_proxy: 'localhost:2227'

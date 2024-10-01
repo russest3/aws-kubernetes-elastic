@@ -3,7 +3,7 @@
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      kubeadm init --kubernetes-version v{{ kubernetes_version_medium }} --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
+      kubeadm init --kubernetes-version v{{ kubernetes_version }} --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU
     executable: /bin/bash
   changed_when: false
 

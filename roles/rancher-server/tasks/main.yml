@@ -3,13 +3,24 @@
   ansible.builtin.shell: "kubectl create namespace cattle-system"
   changed_when: false
 
-- name: 'Install Rancher'
-  ansible.builtin.shell: "helm install rancher rancher-latest/rancher --namespace cattle-system --set hostname=rancher"
+- name: 'Add the Helm chart repository'
+  ansible.builtin.shell: "helm repo add rancher-stable https://releases.rancher.com/server-charts/stable"
+
+- name: 'Install the cert-manager manifest'
+  ansible.builtin.shell: "kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v{{ cert_manager_version }}/cert-manager.yaml"
   changed_when: false
 
-- name: 'Pause 1 minute'
+- name: 'Pause one minute'
   ansible.builtin.pause:
     minutes: 1
+
+- name: 'Install Rancher'
+  ansible.builtin.shell: "helm install rancher rancher-stable/rancher --version={{ rancher_version }} --namespace cattle-system --set hostname=rancher"
+  changed_when: false
+
+- name: 'Pause 3 minutes'
+  ansible.builtin.pause:
+    minutes: 3
 
 - name: 'Verify installation was successful'
   ansible.builtin.shell: "kubectl -n cattle-system rollout status deploy/rancher"
@@ -17,4 +28,30 @@
   until: "'successfully rolled out' in _rancher_results.stdout"
   retries: 25
   delay: 15
+
+- name: 'Patch the rancher service to use NodePort'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl patch svc rancher -n cattle-system -p '{"spec": {"type": "NodePort"}}'
+    executable: /bin/bash
+  changed_when: false
+
+- name: 'Get the NodePort assigned'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl get service rancher -n cattle-system -o yaml | grep nodePort | sed -n '2 p' | awk '{ print $2 }'
+    executable: /bin/bash
+  register: _rancher_node_port
+  changed_when: false
+
+- name: 'Get the node that is running the API server'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      _pod=`kubectl get pods -n cattle-system | grep rancher | awk '{ print $1 }'` && kubectl get pods ${_pod} -n cattle-system -o yaml | grep nodeName | awk '{ print $2 }'
+    executable: /bin/bash
+  register: _argocd_node_ip
+  changed_when: false
 ...

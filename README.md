@@ -5,6 +5,9 @@ Automation to build a Kubernetes cluster with Dashboard running ElasticSearch us
 - Ensure you have ansible >=2.15 installed
 - Azure client installed locally
     -   https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+- Be logged in as the service account to be used for the cluster
+    - Generate a SSH key for this user:
+        - ssh-keygen -t rsa -b 4096
 - Ensure you have exported the following Azure environmental variables:
     - ARM_CLIENT_ID
     - ARM_CLIENT_SECRET

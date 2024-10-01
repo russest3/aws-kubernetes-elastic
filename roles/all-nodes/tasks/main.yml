@@ -47,9 +47,9 @@
 - name: 'Install kubelet kubeadm and kubectl'
   ansible.builtin.apt:
     name:
-      - kubelet={{ kubernetes_version }}
-      - kubeadm={{ kubernetes_version }}
-      - kubectl={{ kubernetes_version }}
+      - kubelet
+      - kubeadm
+      - kubectl
     state: present
 
 - name: 'Mark packages hold so they are not updated'
