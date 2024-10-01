@@ -118,11 +118,11 @@ resource "azurerm_linux_virtual_machine" "c1-cp1" {
     public_key = file("~/.ssh/id_rsa.pub")
   }
 
-  lifecycle {
-    ignore_changes = [ 
-      admin_password,
-     ]
-  }
+  # lifecycle {
+  #   ignore_changes = [ 
+  #     admin_password,
+  #    ]
+  # }
 
   source_image_reference {
     publisher           = var.image_publisher
