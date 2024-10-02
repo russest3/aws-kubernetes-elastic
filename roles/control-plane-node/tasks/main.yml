@@ -85,18 +85,4 @@
     dest: '/usr/bin/helm'
     remote_src: true
     mode: '0755'
-
-- name: 'Get the join-command'
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail
-      kubeadm token create --print-join-command
-    executable: /bin/bash
-  changed_when: false
-  register: _join_command
-  vars:
-    ansible_become: false
-
-- debug:
-    var: _join_command
 ...

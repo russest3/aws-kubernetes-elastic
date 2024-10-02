@@ -20,9 +20,9 @@ Automation to build a Kubernetes cluster with Dashboard running ElasticSearch us
 ## Running the automation
 <pre>$ ansible-playbook automated_install.yml -i localhost,</pre>
 
-You will be prompted for a service account username and password.  This is the credentials to login to the Windows Jump Box used to access the Kubernetes Dashboard.
+You will be prompted for a service account username and password.  This is the credentials to login to the Windows Jump Box.  The name should match your currently logged in user that has an SSH key generated in ~/.ssh/id_rsa.
 
-The automation will create the resource group resources necessary in Azure to run a 4 node Kubernetes cluster with Dashboard hosting ElasticSearch services.
+The automation will create the resource group resources necessary in Azure to run a 4 node Kubernetes cluster with Dashboard hosting various services offered.
 
 ## Accessing the nodes:
 Kubernetes nodes will have IP addresses in the range of 10.0.0.4 to 10.0.0.8

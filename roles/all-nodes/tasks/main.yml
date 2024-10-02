@@ -4,12 +4,16 @@
     name: "{{ svc_acct_name }}"
     generate_ssh_key: true
 
+- name: 'Register hostname'
+  ansible.builtin.shell: "hostname"
+  register: _hostname
+
 - name: 'If this is the control plane node get the current public key for later use'
   ansible.builtin.fetch:
     src: "/home/{{ svc_acct_name }}/.ssh/id_rsa.pub"
     dest: './id_rsa.pub'
     flat: true
-  when: "ansible_hostname | regex_search('^test-c1-cp.*$')"
+  when: "'test-c1-cp' in _hostname.stdout"
 
 - name: 'If a worker node add the control plane node to authorized keys'
   ansible.builtin.copy:
@@ -18,13 +22,13 @@
     owner: "{{ svc_acct_name }}"
     group: "{{ svc_acct_name }}"
     mode: 0600
-  when: "ansible_hostname | regex_search('^test-c1-node.*$')"
+  when: "'test-c1-node' in _hostname.stdout"
 
 - name: 'Add k8s io apt repository gpg key this will likely change for each version of kubernetes release'
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      sudo curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version_short }}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version_short }}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     executable: /bin/bash
   args:
     creates: '/etc/apt/keyrings/kubernetes-apt-keyring.gpg'
