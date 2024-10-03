@@ -46,12 +46,31 @@
   register: _rancher_node_port
   changed_when: false
 
+- name: 'Get the pod name of the pod running rancher server'
+  ansible.builtin.shell: "kubectl get pods -n cattle-system | grep Running | head -1 | awk '{ print $1 }'"
+  changed_when: false
+  register: _rancher_pod
+
 - name: 'Get the node that is running the API server'
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      _pod=`kubectl get pods -n cattle-system | grep rancher | awk '{ print $1 }'` && kubectl get pods ${_pod} -n cattle-system -o yaml | grep nodeName | awk '{ print $2 }'
+      kubectl describe pods {{ _rancher_pod.stdout }} -n cattle-system | grep Node: | awk '{ print $2 }' | cut -d '/' -f 2
     executable: /bin/bash
-  register: _argocd_node_ip
+  register: _rancher_node_ip
   changed_when: false
+
+- name: 'Get the password'
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{"\n"}}'
+    executable: /bin/bash
+  register: _rancher_pw
+  changed_when: false
+
+- ansible.builtin.debug:
+    msg:
+      - "Copy the following password to the Azure jumpbox clipboard to login to the cluster at https://{{ _rancher_node_ip.stdout }}:{{  _rancher_node_port.stdout }}"
+      - "PASSWORD:  {{ _rancher_pw.stdout }}"
 ...

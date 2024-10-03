@@ -274,105 +274,101 @@
       vars:
         _targetIP: "{{ _test_c1_cp1_nic1_ip }}"
 
-# - name: 'Beginning installation of Kubernetes Dashboard'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   connection: local
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   pre_tasks:
-#     - ansible.builtin.stat:
-#         path: "/var/tmp/.kd"
-#       register: _file_exist
-#   roles:
-#     - role: install-dashboard
-#       when: _file_exist.stat.exists == false
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/var/tmp/.kd"
-#         force: true
-#       become: true
+- name: 'Beginning installation of Kubernetes Dashboard'
+  hosts: 'localhost'
+  become: false
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: '/usr/bin/python'
+    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+  vars_files:
+    - common_vars.yml
+  pre_tasks:
+    - ansible.builtin.stat:
+        path: "/var/tmp/.kd"
+      register: _file_exist
+  roles:
+    - role: install-dashboard
+      when: _file_exist.stat.exists == false
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/var/tmp/.kd"
+        force: true
+      become: true
 
-#     - ansible.builtin.pause:
-#         prompt: "Do you wish to install ElasticSearch into the Kubernetes cluster? (Y/N)"
-#       register: _install_elastic
+    - ansible.builtin.pause:
+        prompt: "Do you wish to install ElasticSearch into the Kubernetes cluster? (Y/N)"
+      register: _install_elastic
 
-# - name: 'Beginning installation of ElasticSearch'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   connection: local
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   roles:
-#     - role: install-elastic
-#       when: _install_elastic._user_input | lower == 'y'
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/home/{{ svc_acct_name }}/.elasticinstall"
-#         owner: "{{ svc_acct_name }}"
-#         group: "{{ svc_acct_name }}"
-#         force: true
-#       when: _install_elastic._user_input | lower == 'y'
+- name: 'Beginning installation of ElasticSearch'
+  hosts: 'localhost'
+  become: false
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: '/usr/bin/python'
+    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+  vars_files:
+    - common_vars.yml
+  roles:
+    - role: install-elastic
+      when: _install_elastic._user_input | lower == 'y'
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/home/{{ svc_acct_name }}/.elasticinstall"
+        owner: "{{ svc_acct_name }}"
+        group: "{{ svc_acct_name }}"
+        force: true
+      when: _install_elastic._user_input | lower == 'y'
 
-#     - ansible.builtin.pause:
-#         prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
-#       register: _install_cicd
+    - ansible.builtin.pause:
+        prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
+      register: _install_cicd
 
-# - name: 'Beginning installation of CI/CD Pipeline'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   connection: local
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   roles:
-#     - role: cicd-pipeline
-#       when: _install_cicd._user_input | lower == 'y'
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/home/{{ svc_acct_name }}/.cicdpipelineinstall"
-#         owner: "{{ svc_acct_name }}"
-#         group: "{{ svc_acct_name }}"
-#         force: true
-#       when: _install_cicd._user_input | lower == 'y'
+- name: 'Beginning installation of CI/CD Pipeline'
+  hosts: 'localhost'
+  become: false
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: '/usr/bin/python'
+    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+  vars_files:
+    - common_vars.yml
+  roles:
+    - role: cicd-pipeline
+      when: _install_cicd._user_input | lower == 'y'
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/home/{{ svc_acct_name }}/.cicdpipelineinstall"
+        owner: "{{ svc_acct_name }}"
+        group: "{{ svc_acct_name }}"
+        force: true
+      when: _install_cicd._user_input | lower == 'y'
 
-#     - ansible.builtin.pause:
-#         prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
-#       register: _install_rancher
+    - ansible.builtin.pause:
+        prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
+      register: _install_rancher
 
-# - name: 'Beginning installation of Rancher server'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   connection: local
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   roles:
-#     - role: rancher-server
-#       when: _install_rancher._user_input | lower == 'y'
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/home/{{ svc_acct_name }}/.rancherinstall"
-#         owner: "{{ svc_acct_name }}"
-#         group: "{{ svc_acct_name }}"
-#         force: true
-#       when: _install_rancher._user_input | lower == 'y'
+- name: 'Beginning installation of Rancher server'
+  hosts: 'localhost'
+  become: false
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: '/usr/bin/python'
+    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+  vars_files:
+    - common_vars.yml
+  roles:
+    - role: rancher-server
+      when: _install_rancher._user_input | lower == 'y'
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/home/{{ svc_acct_name }}/.rancherinstall"
+        owner: "{{ svc_acct_name }}"
+        group: "{{ svc_acct_name }}"
+        force: true
+      when: _install_rancher._user_input | lower == 'y'
 ...

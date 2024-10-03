@@ -14,6 +14,7 @@
     - '4crds.yaml'
     - '5operator.yaml'
     - '6quickstart.yaml'
+    - '7service.yaml'
 
 - name: 'Apply the manifests'
   ansible.builtin.shell: "kubectl apply -f {{ item }}"
@@ -26,6 +27,7 @@
     - '4crds.yaml'
     - '5operator.yaml'
     - '6quickstart.yaml'
+    - '7service.yaml'
 
 - name: 'Pause for 2 minutes to wait for pods to start'
   ansible.builtin.pause:
@@ -51,18 +53,14 @@
   register: _secret_results
   changed_when: false
 
-- name: 'Display the password'
-  ansible.builtin.debug:
-    var: _secret_results.stdout
+- name: 'Get the node hosting the Elasticsearch pods'
+  ansible.builtin.shell: "kubectl describe pods elastic-operator-0 -n elastic-system | grep Node: | awk '{ print $2 }' | cut -d '/' -f 2"
+  changed_when: false
+  register: _elastic_node
 
-# What service is associated with this and can we edit it to use a NodePort instead?
-
-# - name: 'Get service quickstart-es-http IP'
-#   ansible.builtin.shell: "kubectl get service quickstart-es-http -n elastic-system | grep quick | awk '{ print $3 }'"
-#   register: _qs_ip
-#   changed_when: false
-
-# - name: 'Get the Elastic Endpoint Information'
-#   ansible.builtin.shell: "curl -u 'elastic:{{ _secret_results.stdout }}' -k 'https://{{ _qs_ip.stdout }}:9200'"
-#   changed_when: false
+- ansible.builtin.debug:
+    msg:
+      - "ElasticSearch API endpoint available at: https://{{ _elastic_node.stdout }}:31988"
+      - "Username: elastic"
+      - "PASSWORD:  {{ _secret_results.stdout }}"
 ...
