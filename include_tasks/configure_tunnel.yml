@@ -4,13 +4,19 @@
         _retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
 
     - name: 'Kill Tunnel'
-      ansible.builtin.shell: "kill `ps -ef | grep 'python3.9 -sm' | head -1 | awk '{ print $2 }'`"
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          kill `ps -ef | grep 'python3.9 -sm' | head -1 | awk '{ print $2 }'`
+        executable: /bin/bash
       changed_when: false
+      vars:
+        ansible_become: false
       ignore_errors: true
 
-    - name: 'Pause 2 seconds'
+    - name: 'Pause 5 seconds'
       ansible.builtin.pause:
-        seconds: 2
+        seconds: 5
 
     - name: 'Setup Tunnel'
       ansible.builtin.shell:
@@ -22,12 +28,19 @@
       vars:
         ansible_become: false
 
-    - name: 'Pause 60s'
+    - name: 'Pause 10s'
       ansible.builtin.pause:
-        seconds: 60
+        seconds: 10
 
     - name: 'Test tunnel'
-      ansible.builtin.shell: "ssh localhost -p {{ '222' + _targetIP.split('.')[-1] }} 'hostname'"
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          ssh localhost -p {{ '222' + _targetIP.split('.')[-1] }} 'hostname'
+        executable: /bin/bash
+      changed_when: false
+      vars:
+        ansible_become: false
       register: _ssh_test
 
     - name: 'Validate tunnel'
@@ -35,8 +48,6 @@
         that: _ssh_test.rc == 0
         fail_msg: "Tunnel failed, retrying..."
         success_msg: "Tunnel setup successful"
-
-    - ansible.builtin.fail:
   rescue:
     - ansible.builtin.fail:
         msg: 'Maximum retries reached.'
