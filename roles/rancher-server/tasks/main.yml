@@ -64,10 +64,12 @@
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{"\n"}}'
+      kubectl get secret --namespace cattle-system bootstrap-secret -o yaml | grep bootstrapPassword | awk '{ print $2 }'
     executable: /bin/bash
   register: _rancher_pw
   changed_when: false
+  vars:
+    _template: "{{.data.bootstrapPassword|base64decode}}"
 
 - ansible.builtin.debug:
     msg:

@@ -76,13 +76,13 @@
     executable: /bin/bash
   changed_when: false
 
-- name: 'Pause for one minute to allow cluster pods to come online'
+- name: 'Pause for 30s to allow cluster pods to come online'
   ansible.builtin.pause:
-    minutes: 1
+    seconds: 30
 
 - debug:
     msg:
-    - "You can now access the argocd cluster from the Windows 10 Jumpbox at https://{{ _argocd_node_ip }}:{{ _argocd_node_port }}"
+    - "You can now access the argocd cluster from the Windows 10 Jumpbox at https://{{ _argocd_node_ip.stdout }}:{{ _argocd_node_port.stdout }}"
     - "USERNAME: admin"
     - "PASSWORD: {{ _argocd_pw.stdout }}"
 ...

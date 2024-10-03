@@ -312,7 +312,7 @@
     - common_vars.yml
   roles:
     - role: install-elastic
-      when: _install_elastic._user_input | lower == 'y'
+      when: _install_elastic.user_input | lower == 'y'
   post_tasks:
     - ansible.builtin.copy:
         content: "complete"
@@ -320,7 +320,7 @@
         owner: "{{ svc_acct_name }}"
         group: "{{ svc_acct_name }}"
         force: true
-      when: _install_elastic._user_input | lower == 'y'
+      when: _install_elastic.user_input | lower == 'y'
 
     - ansible.builtin.pause:
         prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
@@ -337,7 +337,7 @@
     - common_vars.yml
   roles:
     - role: cicd-pipeline
-      when: _install_cicd._user_input | lower == 'y'
+      when: _install_cicd.user_input | lower == 'y'
   post_tasks:
     - ansible.builtin.copy:
         content: "complete"
@@ -345,7 +345,7 @@
         owner: "{{ svc_acct_name }}"
         group: "{{ svc_acct_name }}"
         force: true
-      when: _install_cicd._user_input | lower == 'y'
+      when: _install_cicd.user_input | lower == 'y'
 
     - ansible.builtin.pause:
         prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
@@ -362,7 +362,7 @@
     - common_vars.yml
   roles:
     - role: rancher-server
-      when: _install_rancher._user_input | lower == 'y'
+      when: _install_rancher.user_input | lower == 'y'
   post_tasks:
     - ansible.builtin.copy:
         content: "complete"
@@ -370,5 +370,5 @@
         owner: "{{ svc_acct_name }}"
         group: "{{ svc_acct_name }}"
         force: true
-      when: _install_rancher._user_input | lower == 'y'
+      when: _install_rancher.user_input | lower == 'y'
 ...

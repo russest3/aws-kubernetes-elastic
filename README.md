@@ -36,5 +36,15 @@ ssh localhost -p 2227   # for control plane node IP = 10.0.0.7
 </pre>
 
 The Jumpbox can be accessed via the Azure Portal
-Need to get screenshots of this process
 
+Click on the test-bh Bastion Host
+
+![](images/azurebh1.PNG)
+
+Click on Connect
+
+![](images/azurebh2.PNG)
+
+Enter the IP address of the Windows 10 Jumpbox, enter the service account username and password, and click Connect
+
+![](images/azurebh3.PNG)
