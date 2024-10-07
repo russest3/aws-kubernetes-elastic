@@ -2,19 +2,48 @@
 Automation to build a Kubernetes cluster with Dashboard running ElasticSearch using Terraform in the cloud
 
 ## Requirements
-- Ensure you have ansible >=2.15 installed
-- Azure client installed locally
-    -   https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+- Ensure you have ansible >=2.17 installed
 - Be logged in as the service account to be used for the cluster
     - Generate a SSH key for this user:
         - ssh-keygen -t rsa -b 4096
+- Install ansible collections:  ansible-galaxy collections install -r collections/requirements.yml
+- Install Pip requirements:  python -m pip install -r requirements.txt
+
+### Azure Requirements
+- Azure client installed locally
+    -   https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+
 - Ensure you have exported the following Azure environmental variables:
     - ARM_CLIENT_ID
     - ARM_CLIENT_SECRET
     - ARM_SUBSCRIPTION_ID
     - ARM_TENANT_ID
+
 - Login to the Azure CLI
     - $ az login --use-device-code
+
+### AWS Requirements
+- Add a local 'ubuntu' user and create ssh-keys
+<pre>
+sudo useradd ubuntu
+sudo su - ubuntu
+ssh-keygen -t rsa -b 4096
+exit
+# Add ubuntu user to local sudoers
+sudo printf "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ubuntu
+</pre>
+
+- AWS CLI client installed locally
+<pre>
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+</pre>
+
+
+
+- Run <i>aws configure</i> to create the ~/.aws/credentials file
+  - <b>IMPORTANT: </b>Use IAM User credentials, not the root account!
 
 
 ## Running the automation

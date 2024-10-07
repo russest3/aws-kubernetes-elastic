@@ -8,3 +8,5 @@ azure.mgmt.network
 azure.mgmt.notificationhubs
 azure.storage.blob
 msgraph-sdk
+botocore
+boto3

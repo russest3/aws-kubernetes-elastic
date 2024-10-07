@@ -1,5 +1,5 @@
 ---
-- name: 'Beginning Terraform - Kubernetes - ElasticSearch Automation'
+- name: 'Beginning Automation...'
   hosts: localhost
   gather_facts: false
   become: false
@@ -13,13 +13,18 @@
       prompt: 'Enter password for service account'
       private: false
 
+  vars:
+    automation_type: 'azure'
+
   vars_files:
     - common_vars.yml
 
   pre_tasks:
     - ansible.builtin.debug:
         msg:
-          - Ensure you are running ansible>=2.15.0 !
+          - Ensure you are running ansible>=2.17.0
+          - "Install collection requirements: ansible-galaxy collection install -r collections/requirements.yml"
+          - "Install Pip requirements: python -m pip install -r requirements.txt"
           - Ensure you have exported the Azure Environment Variables (ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_SUBSCRIPTION_ID, ARM_TENANT_ID) !
           - Ensure you have logged in to Azure using az login --use-device-code !
 
@@ -80,7 +85,7 @@
       become: true
 
     - name: 'Getting node information...'
-      ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
+      ansible.builtin.include_tasks: 'include_tasks/get_node_info_azure.yml'
 
 - name: 'Configure Tunnel'
   hosts: localhost
@@ -89,7 +94,7 @@
   become: false
   tasks:
     - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
+      ansible.builtin.include_tasks: include_tasks/configure_tunnel_azure.yml
       vars:
         _targetIP: "{{ _test_c1_cp1_nic1_ip }}"
 
@@ -139,7 +144,7 @@
   connection: local
   tasks:
     - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
+      ansible.builtin.include_tasks: include_tasks/configure_tunnel_azure.yml
       vars:
         _targetIP: "{{ _test_c1_node1_nic1_ip }}"
 
@@ -181,7 +186,7 @@
   connection: local
   tasks:
     - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
+      ansible.builtin.include_tasks: include_tasks/configure_tunnel_azure.yml
       vars:
         _targetIP: "{{ _test_c1_node2_nic1_ip }}"
 
@@ -223,7 +228,7 @@
   connection: local
   tasks:
     - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
+      ansible.builtin.include_tasks: include_tasks/configure_tunnel_azure.yml
       vars:
         _targetIP: "{{ _test_c1_node3_nic1_ip }}"
 
@@ -270,7 +275,7 @@
         state: absent
 
     - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
+      ansible.builtin.include_tasks: include_tasks/configure_tunnel_azure.yml
       vars:
         _targetIP: "{{ _test_c1_cp1_nic1_ip }}"
 

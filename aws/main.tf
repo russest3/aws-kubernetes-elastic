@@ -12,8 +12,31 @@ provider "aws" {
 }
 
 ########## VPC #################################
-resource "aws_vpc" "test" {
+resource "aws_vpc" "vpc-0f362cc922d6593f4" {
   cidr_block = var.cidr
+}
+
+resource "aws_vpc_endpoint" "ec2" {
+  vpc_id            = aws_vpc.vpc-0f362cc922d6593f4.id
+  service_name      = "com.amazonaws.us-east-1.ec2"
+  vpc_endpoint_type = "Interface"
+
+  subnet_configuration {
+    ipv4      = "172.31.0.10"
+    subnet_id = aws_subnet.internal.id
+  }
+
+  tags     = {
+    Name = "my-endpoint-01"
+  }
+
+  subnet_ids = [
+    aws_subnet.internal.id
+  ]
+}
+
+resource "aws_ec2_instance_connect_endpoint" "my-endpoint-connect" {
+  subnet_id = aws_subnet.internal.id
 }
 ##########################################################
 
@@ -21,7 +44,7 @@ resource "aws_vpc" "test" {
 
 ############### NETWORK CONFIG############################
 resource "aws_subnet" "internal" {
-  vpc_id               = aws_vpc.test.id
+  vpc_id               = aws_vpc.vpc-0f362cc922d6593f4.id
   cidr_block           = var.cidr
   availability_zone    = var.az
 }
@@ -35,7 +58,7 @@ resource "aws_network_interface" "c1-cp1" {
 
 ################ SSH Keys ############################################
 resource "aws_key_pair" "svcaccount" {
-  key_name             = "svcaccount-key"
+  key_name             = "ubuntu@dlautobots01.wil.csc.local"
   public_key           = file("~/.ssh/id_rsa.pub")
 }
 ######################################################################
@@ -52,58 +75,12 @@ resource "aws_ebs_volume" "c1-cp1" {
 
 
 
-############### IAM ##################################################
-resource "aws_iam_user" "ec2admin" {
-  name = "ec2"
-  path = "/system/"
-}
-
-resource "aws_iam_role_policy_attachment" "ec2admin" {
-  role       = aws_iam_role.ec2admin.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-}
-
-resource "aws_iam_instance_profile" "ec2admin" {
-  name = "ec2admin"
-  role = aws_iam_role.ec2admin.name
-}
-
-resource "aws_iam_role" "ec2admin" {
-  name       =    "ec2admin"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Sid    = ""
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      },
-    ]
-  })
-}
-
-resource "aws_iam_access_key" "ec2admin" {
-  user    = aws_iam_user.ec2admin.name
-}
-
-output "secret" {
-  value = aws_iam_access_key.ec2admin.encrypted_secret
-}
-############################################################
-
-
-
-
 ############### CONTROL PLANE NODE #####################
 resource "aws_instance" "c1-cp1" {
   ami                         = var.ami
   instance_type               = var.instance_type
   user_data                   = filebase64("script.tftpl")
   key_name                    = aws_key_pair.svcaccount.key_name
-  iam_instance_profile        = aws_iam_instance_profile.ec2admin.name
   network_interface {
     network_interface_id = aws_network_interface.c1-cp1.id
     device_index         = 0

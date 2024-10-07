@@ -21,3 +21,5 @@ runcmd:
   - sudo containerd config default | tee /etc/containerd/config.toml
   - sudo sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
   - sudo systemctl restart containerd
+  - sudo snap switch --channel=candidate amazon-ssm-agent
+  - sudo chpasswd <<<"ubuntu:12H3@nez8%.H1582dS"

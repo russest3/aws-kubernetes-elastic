@@ -7,7 +7,7 @@
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          kill `ps -ef | grep 'python3.9 -sm' | head -1 | awk '{ print $2 }'`
+          kill `ps -ef | grep 'ec2-instance-connect' | head -1 | awk '{ print $2 }'`
         executable: /bin/bash
       changed_when: false
       vars:
@@ -22,7 +22,7 @@
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          az network bastion tunnel --name 'test-bh' --resource-group 'test' --target-ip-address '{{ _targetIP }}' --resource-port '22' --port '{{ '222' + _targetIP.split('.')[-1] }}' &
+          aws ec2-instance-connect open-tunnel --instance-id {{ _test_c1_cp1_instance_id }} --local-port '{{ '222' + _targetIP.split('.')[-1] }}' &
         executable: /bin/bash
       changed_when: false
       vars:
@@ -36,7 +36,7 @@
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          ssh localhost -p {{ '222' + _targetIP.split('.')[-1] }} 'hostname'
+          ssh -o strictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@localhost -p {{ '222' + _targetIP.split('.')[-1] }} 'hostname'
         executable: /bin/bash
       changed_when: false
       vars:
@@ -53,5 +53,5 @@
         msg: 'Maximum retries reached.'
       when: _retry_count | int == 5
 
-    - ansible.builtin.include_tasks: 'include_tasks/configure_tunnel.yml'
+    - ansible.builtin.include_tasks: 'include_tasks/configure_tunnel_aws.yml'
 ...

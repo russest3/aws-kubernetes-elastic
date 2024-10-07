@@ -6,7 +6,7 @@ variable "location" {
 
 variable "cidr" {
   type    = string
-  default = "10.0.0.0/16"
+  default = "172.31.0.0/20"
 }
 
 variable "az" {
@@ -22,5 +22,5 @@ variable "instance_type" {
 
 variable "ami" {
   type    = string
-  default = "ami-0866a3c8686eaeeba"
+  default = "ami-005fc0f236362e99f"
 }

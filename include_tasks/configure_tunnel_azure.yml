@@ -1,0 +1,57 @@
+---
+- block:
+    - ansible.builtin.set_fact:
+        _retry_count: "{{ 0 if retry_count is undefined else retry_count | int + 1 }}"
+
+    - name: 'Kill Tunnel'
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          kill `ps -ef | grep 'python3.9 -sm' | head -1 | awk '{ print $2 }'`
+        executable: /bin/bash
+      changed_when: false
+      vars:
+        ansible_become: false
+      ignore_errors: true
+
+    - name: 'Pause 5 seconds'
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: 'Setup Tunnel'
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          az network bastion tunnel --name 'test-bh' --resource-group 'test' --target-ip-address '{{ _targetIP }}' --resource-port '22' --port '{{ '222' + _targetIP.split('.')[-1] }}' &
+        executable: /bin/bash
+      changed_when: false
+      vars:
+        ansible_become: false
+
+    - name: 'Pause 10s'
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: 'Test tunnel'
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          ssh localhost -p {{ '222' + _targetIP.split('.')[-1] }} 'hostname'
+        executable: /bin/bash
+      changed_when: false
+      vars:
+        ansible_become: false
+      register: _ssh_test
+
+    - name: 'Validate tunnel'
+      ansible.builtin.assert:
+        that: _ssh_test.rc == 0
+        fail_msg: "Tunnel failed, retrying..."
+        success_msg: "Tunnel setup successful"
+  rescue:
+    - ansible.builtin.fail:
+        msg: 'Maximum retries reached.'
+      when: _retry_count | int == 5
+
+    - ansible.builtin.include_tasks: 'include_tasks/configure_tunnel_azure.yml'
+...
