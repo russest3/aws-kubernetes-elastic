@@ -1,12 +1,10 @@
 ---
-- name: 'Get info for test-c1-cp1-nic1'
+############# c1-cp1 ##############################
+- name: 'Get info for test-c1-cp1'
   amazon.aws.ec2_instance_info:
     filters:
       "tag:Name": test-c1-cp1
   register: _test_c1_cp1
-
-- debug:
-    var: _test_c1_cp1
 
 - name: 'Get IP address for test-c1-cp1'
   ansible.builtin.set_fact:
@@ -19,10 +17,69 @@
     _test_c1_cp1_instance_id: "{{ _test_c1_cp1 | json_query(_query) }}"
   vars:
     _query: "instances[].instance_id | [0]"
+##################################################
 
-- debug:
-    var: _test_c1_cp1_nic1_ip
 
-- debug:
-    var: _test_c1_cp1_instance_id
+################## c1-node1 ################################
+- name: 'Get info for test-c1-node1'
+  amazon.aws.ec2_instance_info:
+    filters:
+      "tag:Name": test-c1-node1
+  register: _test_c1_node1
+
+- name: 'Get IP address for test-c1-node1'
+  ansible.builtin.set_fact:
+    _test_c1_node1_nic1_ip: "{{ _test_c1_node1 | json_query(_query) }}"
+  vars:
+    _query: "instances[].network_interfaces[].private_ip_address | [0]"
+
+- name: 'Get instance ID for test-c1-node1'
+  ansible.builtin.set_fact:
+    _test_c1_node1_instance_id: "{{ _test_c1_node1 | json_query(_query) }}"
+  vars:
+    _query: "instances[].instance_id | [0]"
+##############################################################
+
+
+################## c1-node2 ################################
+- name: 'Get info for test-c1-node2'
+  amazon.aws.ec2_instance_info:
+    filters:
+      "tag:Name": test-c1-node2
+  register: _test_c1_node2
+
+- name: 'Get IP address for test-c1-node2'
+  ansible.builtin.set_fact:
+    _test_c1_node2_nic1_ip: "{{ _test_c1_node2 | json_query(_query) }}"
+  vars:
+    _query: "instances[].network_interfaces[].private_ip_address | [0]"
+
+- name: 'Get instance ID for test-c1-node2'
+  ansible.builtin.set_fact:
+    _test_c1_node2_instance_id: "{{ _test_c1_node2 | json_query(_query) }}"
+  vars:
+    _query: "instances[].instance_id | [0]"
+##############################################################
+
+
+
+################## c1-node3 ################################
+- name: 'Get info for test-c1-node3'
+  amazon.aws.ec2_instance_info:
+    filters:
+      "tag:Name": test-c1-node3
+  register: _test_c1_node3
+
+- name: 'Get IP address for test-c1-node3'
+  ansible.builtin.set_fact:
+    _test_c1_node3_nic1_ip: "{{ _test_c1_node3 | json_query(_query) }}"
+  vars:
+    _query: "instances[].network_interfaces[].private_ip_address | [0]"
+
+- name: 'Get instance ID for test-c1-node3'
+  ansible.builtin.set_fact:
+    _test_c1_node3_instance_id: "{{ _test_c1_node3 | json_query(_query) }}"
+  vars:
+    _query: "instances[].instance_id | [0]"
+##############################################################
 ...

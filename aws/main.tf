@@ -52,6 +52,18 @@ resource "aws_subnet" "internal" {
 resource "aws_network_interface" "c1-cp1" {
   subnet_id            = aws_subnet.internal.id
 }
+
+resource "aws_network_interface" "c1-node1" {
+  subnet_id            = aws_subnet.internal.id
+}
+
+resource "aws_network_interface" "c1-node2" {
+  subnet_id            = aws_subnet.internal.id
+}
+
+resource "aws_network_interface" "c1-node3" {
+  subnet_id            = aws_subnet.internal.id
+}
 ##############################################################
 
 
@@ -70,6 +82,21 @@ resource "aws_ebs_volume" "c1-cp1" {
   availability_zone    = var.az
   size                 = 4
 }
+
+resource "aws_ebs_volume" "c1-node1" {
+  availability_zone    = var.az
+  size                 = 4
+}
+
+resource "aws_ebs_volume" "c1-node2" {
+  availability_zone    = var.az
+  size                 = 4
+}
+
+resource "aws_ebs_volume" "c1-node3" {
+  availability_zone    = var.az
+  size                 = 4
+}
 ####################################################
 
 
@@ -79,7 +106,7 @@ resource "aws_ebs_volume" "c1-cp1" {
 resource "aws_instance" "c1-cp1" {
   ami                         = var.ami
   instance_type               = var.instance_type
-  user_data                   = filebase64("script.tftpl")
+  user_data                   = filebase64("c1-cp1.tftpl")
   key_name                    = aws_key_pair.svcaccount.key_name
   network_interface {
     network_interface_id = aws_network_interface.c1-cp1.id
@@ -90,3 +117,50 @@ resource "aws_instance" "c1-cp1" {
   }
 }
 #######################################
+
+
+
+
+###################### WORKER NODES ########################
+resource "aws_instance" "c1-node1" {
+  ami                         = var.ami
+  instance_type               = var.instance_type
+  user_data                   = filebase64("c1-node1.tftpl")
+  key_name                    = aws_key_pair.svcaccount.key_name
+  network_interface {
+    network_interface_id = aws_network_interface.c1-node1.id
+    device_index         = 0
+  }
+  tags     = {
+    Name = "test-c1-node1"
+  }
+}
+
+resource "aws_instance" "c1-node2" {
+  ami                         = var.ami
+  instance_type               = var.instance_type
+  user_data                   = filebase64("c1-node2.tftpl")
+  key_name                    = aws_key_pair.svcaccount.key_name
+  network_interface {
+    network_interface_id = aws_network_interface.c1-node2.id
+    device_index         = 0
+  }
+  tags     = {
+    Name = "test-c1-node2"
+  }
+}
+
+resource "aws_instance" "c1-node3" {
+  ami                         = var.ami
+  instance_type               = var.instance_type
+  user_data                   = filebase64("c1-node3.tftpl")
+  key_name                    = aws_key_pair.svcaccount.key_name
+  network_interface {
+    network_interface_id = aws_network_interface.c1-node3.id
+    device_index         = 0
+  }
+  tags     = {
+    Name = "test-c1-node3"
+  }
+}
+############################################################

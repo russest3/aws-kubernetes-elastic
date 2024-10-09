@@ -1,5 +1,7 @@
 #cloud-config
 runcmd:
+  - sudo hostname test-c1-cp1
+  - sudo echo "test-c1-cp1" > /etc/hostname
   - sudo add-apt-repository -y ppa:deadsnakes/ppa
   - sudo apt install -y python3.10 containerd apt-transport-https ca-certificates curl gpg
   - sudo rm -f /usr/bin/python3
@@ -22,4 +24,3 @@ runcmd:
   - sudo sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
   - sudo systemctl restart containerd
   - sudo snap switch --channel=candidate amazon-ssm-agent
-  - sudo chpasswd <<<"ubuntu:12H3@nez8%.H1582dS"

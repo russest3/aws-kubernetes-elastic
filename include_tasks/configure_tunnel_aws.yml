@@ -22,7 +22,7 @@
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          aws ec2-instance-connect open-tunnel --instance-id {{ _test_c1_cp1_instance_id }} --local-port '{{ '222' + _targetIP.split('.')[-1] }}' &
+          aws ec2-instance-connect open-tunnel --instance-id {{ _instanceID }} --local-port '{{ '222' + _targetIP.split('.')[-1][:-1]  }}' &
         executable: /bin/bash
       changed_when: false
       vars:
@@ -36,7 +36,7 @@
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          ssh -o strictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@localhost -p {{ '222' + _targetIP.split('.')[-1] }} 'hostname'
+          ssh -o strictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@localhost -p {{ '222' + _targetIP.split('.')[-1][:-1] }} 'hostname'
         executable: /bin/bash
       changed_when: false
       vars:
