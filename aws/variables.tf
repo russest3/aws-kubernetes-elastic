@@ -6,7 +6,7 @@ variable "location" {
 
 variable "cidr" {
   type    = string
-  default = "172.31.0.0/20"
+  default = "172.31.0.0/16"
 }
 
 variable "az" {

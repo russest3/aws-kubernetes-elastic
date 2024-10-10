@@ -12,19 +12,16 @@ provider "aws" {
 }
 
 ########## VPC #################################
-resource "aws_vpc" "vpc-0f362cc922d6593f4" {
-  cidr_block = var.cidr
+resource "aws_default_vpc" "test" {
+  tags = {
+    Name = "Default VPC"
+  }
 }
 
 resource "aws_vpc_endpoint" "ec2" {
-  vpc_id            = aws_vpc.vpc-0f362cc922d6593f4.id
+  vpc_id            = aws_default_vpc.test.id
   service_name      = "com.amazonaws.us-east-1.ec2"
   vpc_endpoint_type = "Interface"
-
-  subnet_configuration {
-    ipv4      = "172.31.0.10"
-    subnet_id = aws_subnet.internal.id
-  }
 
   tags     = {
     Name = "my-endpoint-01"
@@ -44,9 +41,21 @@ resource "aws_ec2_instance_connect_endpoint" "my-endpoint-connect" {
 
 ############### NETWORK CONFIG############################
 resource "aws_subnet" "internal" {
-  vpc_id               = aws_vpc.vpc-0f362cc922d6593f4.id
-  cidr_block           = var.cidr
-  availability_zone    = var.az
+  vpc_id               = aws_default_vpc.test.id
+  cidr_block           = "172.31.1.0/24"
+  tags = {
+    Name = "internal"
+  }
+}
+
+resource "aws_subnet" "public" {
+  depends_on = [ aws_default_vpc.test ]
+  vpc_id               = aws_default_vpc.test.id
+  cidr_block           = "172.31.2.0/24"
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "public"
+  }
 }
 
 resource "aws_network_interface" "c1-cp1" {
@@ -63,6 +72,81 @@ resource "aws_network_interface" "c1-node2" {
 
 resource "aws_network_interface" "c1-node3" {
   subnet_id            = aws_subnet.internal.id
+}
+
+resource "aws_eip" "main" {
+  domain   = "vpc"
+  depends_on = [ aws_route_table_association.public-ig ]
+  tags = {
+    Name = "main"
+  }
+}
+
+resource "aws_internet_gateway" "main" {
+  depends_on = [ aws_default_vpc.test,
+                 aws_subnet.internal,
+                 aws_subnet.public
+   ]
+  tags = {
+    Name = "main"
+  }
+}
+
+resource "aws_internet_gateway_attachment" "main" {
+  internet_gateway_id = aws_internet_gateway.main.id
+  vpc_id              = aws_default_vpc.test.id
+}
+
+resource "aws_route_table" "public-ig" {
+  vpc_id               = aws_default_vpc.test.id
+  depends_on = [ aws_internet_gateway.main,
+                 aws_default_vpc.test
+  ]
+  route {
+    cidr_block             = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "main"
+  }
+}
+
+resource "aws_route_table_association" "public-ig" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public-ig.id
+  depends_on = [ aws_default_vpc.test,
+                 aws_subnet.internal,
+                 aws_subnet.public,
+                 aws_route_table.public-ig
+   ]
+}
+
+resource "aws_route_table" "private" {
+  vpc_id               = aws_default_vpc.test.id
+  depends_on = [ aws_nat_gateway.gw ]
+  route {
+    cidr_block             = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.gw.id
+  }
+  tags = {
+    Name = "main"
+  }
+}
+
+resource "aws_route_table_association" "internal" {
+  subnet_id      = aws_subnet.internal.id
+  route_table_id = aws_route_table.private.id
+  depends_on = [ aws_route_table.private ]
+}
+
+resource "aws_nat_gateway" "gw" {
+  allocation_id = aws_eip.main.id
+  subnet_id     = aws_subnet.public.id
+  tags = {
+    Name = "gw"
+  }
+  depends_on = [ aws_eip.main ]
 }
 ##############################################################
 
