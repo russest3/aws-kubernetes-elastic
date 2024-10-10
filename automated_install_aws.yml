@@ -56,6 +56,10 @@
         force: true
       become: true
 
+    - name: 'Pause 1 minute to allow AWS creation to finish'
+      ansible.builtin.pause:
+        minutes: 1
+
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info_aws.yml'
 

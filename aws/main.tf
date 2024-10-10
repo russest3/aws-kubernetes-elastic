@@ -189,7 +189,8 @@ resource "aws_ebs_volume" "c1-node3" {
 ############### CONTROL PLANE NODE #####################
 resource "aws_instance" "c1-cp1" {
   ami                         = var.ami
-  instance_type               = var.instance_type
+  # instance_type               = var.instance_type
+  instance_type               = "t2.small"
   user_data                   = filebase64("c1-cp1.tftpl")
   key_name                    = aws_key_pair.svcaccount.key_name
   network_interface {
