@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  become: false
+  gather_facts: false
+  connection: local
+
+  tasks:
+
+    - include_tasks: 'include_tasks/get_node_info.yml'
+...

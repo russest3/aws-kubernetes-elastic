@@ -2,5 +2,5 @@
 collections:
   - name: community.general
   - name: ansible.posix
-  - name: Azure.Azcollection
+  - name: amazon.aws
 ...

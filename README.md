@@ -1,21 +1,47 @@
-# terraform-azure-kubernetes-elastic
-Automation to build a Kubernetes cluster with Dashboard running ElasticSearch using Terraform in the cloud
+# AWS - Kubernetes Cluster built with the AWS CDK
 
-## Requirements
-- Ensure you have ansible >=2.15 installed
-- Azure client installed locally
-    -   https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
-- Be logged in as the service account to be used for the cluster
-    - Generate a SSH key for this user:
-        - ssh-keygen -t rsa -b 4096
-- Ensure you have exported the following Azure environmental variables:
-    - ARM_CLIENT_ID
-    - ARM_CLIENT_SECRET
-    - ARM_SUBSCRIPTION_ID
-    - ARM_TENANT_ID
-- Login to the Azure CLI
-    - $ az login --use-device-code
+<h3>Requirements</h3>
 
+CDK uses the AWS CLI so install that first!
+
+<pre>
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+</pre>
+
+Run aws configure to configure authentication using keys
+
+Requires Node.js > 10.13
+
+For Ubuntu 24.04:
+
+<pre>
+curl -fsSL https://deb.nodesource.com/setup_current.x -o nodesource_setup.sh
+sudo -E bash nodesource_setup.sh
+sudo apt-get install -y nodejs
+
+# Install the toolkit:
+sudo npm install -g aws-cdk
+python -m pip install aws-cdk-lib
+</pre>
+
+<h4>Preparing an AWS Region for CDK Deployments</h4>
+
+The `cdk-bootstrap` command is used to bootstrap a CDK environments
+
+<pre>
+cdk bootstrap account-num/region
+
+Example:
+cdk bootstrap 1234567929/us-east-2
+</pre>
+
+- Creates a CDK Toolkit stack, buckets, and IAM role
+
+Create a AWS EC2 KeyPair in the AWS Management Console, name it "KubernetesKeyPair"
+
+Download this keypair as a .pem file and store it securely in your ~/.ssh/ folder
 
 ## Running the automation
 <pre>$ ansible-playbook automated_install.yml -i localhost,</pre>

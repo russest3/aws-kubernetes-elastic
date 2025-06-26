@@ -1,0 +1,5 @@
+cdk_workspace/**/.venv/
+cdk_workspace/**/venv/
+cdk_workspace/**/cdk.out/
+cdk_workspace/**/bin/
+cdk_workspace/**/cdk.context.json

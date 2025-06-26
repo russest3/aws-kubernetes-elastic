@@ -11,15 +11,15 @@
   ansible.builtin.pause:
     seconds: 30
 
-- name: "Make the /home/{{ svc_acct_name }}/.kube directory"
+- name: "Make the ~/.kube directory"
   ansible.builtin.file:
-    path: "/home/{{ svc_acct_name }}/.kube"
+    path: "~/.kube"
     state: directory
     owner: "{{ svc_acct_name }}"
     group: "{{ svc_acct_name }}"
     mode: "0700"
 
-- name: 'Copy admin.conf to /home/{{ svc_acct_name }}/.kube/config'
+- name: 'Copy admin.conf to ~/.kube/config'
   ansible.builtin.copy:
     remote_src: true
     src: '/etc/kubernetes/admin.conf'
@@ -45,8 +45,8 @@
       kubectl create -f /home/{{ svc_acct_name }}/kube-flannel.yml
     executable: /bin/bash
   changed_when: false
-  vars:
-    ansible_become: false
+  # vars:
+  #   ansible_become: false
 
 - name: 'Pause 1 min for creation'
   ansible.builtin.pause:
@@ -60,8 +60,8 @@
     executable: /bin/bash
   changed_when: false
   register: _get_nodes
-  vars:
-    ansible_become: false
+  # vars:
+  #   ansible_become: false
 
 - name: 'Validate that control node is ready'
   ansible.builtin.assert:
@@ -72,12 +72,14 @@
     url: 'https://get.helm.sh/helm-v3.15.3-linux-amd64.tar.gz'
     dest: '/var/tmp/'
     validate_certs: false
+  become: true
 
 - name: 'Extract the archive'
   ansible.builtin.unarchive:
     src: '/var/tmp/helm-v3.15.3-linux-amd64.tar.gz'
     dest: '/var/tmp/'
     remote_src: true
+  become: true
 
 - name: 'Copy the helm binary to /usr/bin'
   ansible.builtin.copy:
@@ -85,4 +87,5 @@
     dest: '/usr/bin/helm'
     remote_src: true
     mode: '0755'
+    become: true
 ...

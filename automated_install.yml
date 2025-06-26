@@ -1,37 +1,34 @@
 ---
-- name: 'Beginning Terraform - Kubernetes - ElasticSearch Automation'
+- name: 'Beginning Kubernetes Cluster build'
   hosts: localhost
   gather_facts: false
   become: false
   connection: local
 
   vars_prompt:
-    - name: admin_name
-      prompt: 'Enter name for service account'
-      private: false
-    - name: admin_pw
-      prompt: 'Enter password for service account'
+    - name: region_name
+      prompt: 'Enter the AWS region you will be building in (for instance: us-east-1)'
       private: false
 
   vars_files:
     - common_vars.yml
 
   pre_tasks:
-    - ansible.builtin.debug:
-        msg:
-          - Ensure you are running ansible>=2.15.0 !
-          - Ensure you have exported the Azure Environment Variables (ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_SUBSCRIPTION_ID, ARM_TENANT_ID) !
-          - Ensure you have logged in to Azure using az login --use-device-code !
+    - name: 'Retrieve AMI info of Ubuntu 24.04 image'
+      ansible.builtin.shell:
+        cmd: "aws ec2 describe-images --region {{ region_name }} --filters 'Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20250610'"
+      changed_when: false
+      register: _ami_results
 
-    - name: 'Ensuring environment variables are set (ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_SUBSCRIPTION_ID, ARM_TENANT_ID)'
+    - name: 'Format AMI output'
       ansible.builtin.set_fact:
-        _dep_check_results: "{{ _dep_check_results | default([]) + [ item | string ] }}"
-      loop:
-        - "{{ true if lookup('ansible.builtin.env', 'ARM_CLIENT_ID') is defined else false }}"
-        - "{{ true if lookup('ansible.builtin.env', 'ARM_CLIENT_SECRET') is defined else false }}"
-        - "{{ true if lookup('ansible.builtin.env', 'ARM_SUBSCRIPTION_ID') is defined else false }}"
-        - "{{ true if lookup('ansible.builtin.env', 'ARM_TENANT_ID') is defined else false }}"
-      failed_when: "'false' in _dep_check_results"
+        _ami_results_formatted: "{{ _ami_results.stdout | trim }}"
+    
+    - name: 'Get the AMI ID of the Image'
+      ansible.builtin.set_fact:
+        ami_id: "{{ _ami_results_formatted | json_query(_query) }}"
+      vars:
+        _query: "Images[].ImageId | [0]"
 
     - ansible.builtin.stat:
         path: "/var/tmp/.baseclusterinstall"
@@ -52,26 +49,10 @@
 
   tasks:
     - block:
-        - name: 'Include Terraform tasks'
-          ansible.builtin.include_tasks: 'include_tasks/terraform.yml'
-
-        - name: 'Wait for bastion host creation to complete'
-          azure.azcollection.azure_rm_resource_info:
-            api_version: '2024-03-01'
-            resource_group: "{{ resource_group }}"
-            provider: 'network'
-            resource_type: 'bastionHosts'
-            resource_name: 'test-bh'
-          register: _bh_status
-          until: "_bh_status | json_query(_query) == 'Succeeded'"
-          retries: 20
-          delay: 30
-          vars:
-            _query: "response[].properties.provisioningState | [0]"
-
-        - debug:
-            var: _bh_status
+        - name: 'Include CDK tasks'
+          ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
       when: "_rerun_input == 'y'"
+
   post_tasks:
     - ansible.builtin.copy:
         content: "complete"
@@ -82,21 +63,10 @@
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
 
-- name: 'Configure Tunnel'
-  hosts: localhost
-  gather_facts: false
-  connection: local
-  become: false
-  tasks:
-    - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
-      vars:
-        _targetIP: "{{ _test_c1_cp1_nic1_ip }}"
-
 - name: 'Configure c1-cp1'
-  hosts: localhost
+  hosts: "{{ c1_cp1_ip }}"
   gather_facts: true
-  become: true
+  become: false
   pre_tasks:
     - ansible.builtin.stat:
         path: "/var/tmp/.cpninstall"
@@ -108,7 +78,6 @@
       when: _file_exist.stat.exists == false
   vars:
     ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
   vars_files:
     - common_vars.yml
   post_tasks:
@@ -132,243 +101,194 @@
         force: true
       become: true
 
-- name: 'Configure Tunnel'
-  hosts: localhost
-  gather_facts: false
-  become: false
-  connection: local
-  tasks:
-    - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
-      vars:
-        _targetIP: "{{ _test_c1_node1_nic1_ip }}"
+# - name: 'Configure c1-node1'
+#   hosts: 'localhost'
+#   gather_facts: true
+#   become: true
+#   pre_tasks:
+#     - ansible.builtin.stat:
+#         path: "/var/tmp/.wninstall"
+#       register: _file_exist
+#   roles:
+#     - role: all-nodes
+#       when: _file_exist.stat.exists == false
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_node1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   post_tasks:
+#     - name: 'Run the join-command to join the node to the cluster'
+#       ansible.builtin.shell:
+#         cmd: |
+#           set -o pipefail
+#           {{ _join_command.stdout }}
+#         executable: /bin/bash
+#       changed_when: false
 
-- name: 'Configure c1-node1'
-  hosts: 'localhost'
-  gather_facts: true
-  become: true
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.wninstall"
-      register: _file_exist
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_node1_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  post_tasks:
-    - name: 'Run the join-command to join the node to the cluster'
-      ansible.builtin.shell:
-        cmd: |
-          set -o pipefail
-          {{ _join_command.stdout }}
-        executable: /bin/bash
-      changed_when: false
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/var/tmp/.wninstall"
+#         force: true
+#       become: true
 
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/var/tmp/.wninstall"
-        force: true
-      become: true
+# - name: 'Configure c1-node2'
+#   hosts: 'localhost'
+#   gather_facts: true
+#   become: true
+#   pre_tasks:
+#     - ansible.builtin.stat:
+#         path: "/var/tmp/.wninstall"
+#       register: _file_exist
+#   roles:
+#     - role: all-nodes
+#       when: _file_exist.stat.exists == false
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_node2_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   post_tasks:
+#     - name: 'Run the join-command to join the node to the cluster'
+#       ansible.builtin.shell:
+#         cmd: |
+#           set -o pipefail
+#           {{ _join_command.stdout }}
+#         executable: /bin/bash
+#       changed_when: false
 
-- name: 'Configure Tunnel'
-  hosts: localhost
-  gather_facts: false
-  become: false
-  connection: local
-  tasks:
-    - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
-      vars:
-        _targetIP: "{{ _test_c1_node2_nic1_ip }}"
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/var/tmp/.wninstall"
+#         force: true
+#       become: true
 
-- name: 'Configure c1-node2'
-  hosts: 'localhost'
-  gather_facts: true
-  become: true
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.wninstall"
-      register: _file_exist
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_node2_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  post_tasks:
-    - name: 'Run the join-command to join the node to the cluster'
-      ansible.builtin.shell:
-        cmd: |
-          set -o pipefail
-          {{ _join_command.stdout }}
-        executable: /bin/bash
-      changed_when: false
+# - name: 'Configure c1-node3'
+#   hosts: 'localhost'
+#   gather_facts: true
+#   become: true
+#   pre_tasks:
+#     - ansible.builtin.stat:
+#         path: "/var/tmp/.wninstall"
+#       register: _file_exist
+#   roles:
+#     - role: all-nodes
+#       when: _file_exist.stat.exists == false
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_node3_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   post_tasks:
+#     - name: 'Run the join-command to join the node to the cluster'
+#       ansible.builtin.shell:
+#         cmd: |
+#           set -o pipefail
+#           {{ _join_command.stdout }}
+#         executable: /bin/bash
+#       changed_when: false
 
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/var/tmp/.wninstall"
-        force: true
-      become: true
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/var/tmp/.wninstall"
+#         force: true
+#       become: true
 
-- name: 'Configure Tunnel'
-  hosts: localhost
-  gather_facts: false
-  become: false
-  connection: local
-  tasks:
-    - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
-      vars:
-        _targetIP: "{{ _test_c1_node3_nic1_ip }}"
+# - name: 'Beginning installation of Kubernetes Dashboard'
+#   hosts: 'localhost'
+#   become: false
+#   gather_facts: true
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   pre_tasks:
+#     - ansible.builtin.stat:
+#         path: "/var/tmp/.kd"
+#       register: _file_exist
+#   roles:
+#     - role: install-dashboard
+#       when: _file_exist.stat.exists == false
+#   post_tasks:
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/var/tmp/.kd"
+#         force: true
+#       become: true
 
-- name: 'Configure c1-node3'
-  hosts: 'localhost'
-  gather_facts: true
-  become: true
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.wninstall"
-      register: _file_exist
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_node3_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  post_tasks:
-    - name: 'Run the join-command to join the node to the cluster'
-      ansible.builtin.shell:
-        cmd: |
-          set -o pipefail
-          {{ _join_command.stdout }}
-        executable: /bin/bash
-      changed_when: false
+#     - ansible.builtin.pause:
+#         prompt: "Do you wish to install ElasticSearch into the Kubernetes cluster? (Y/N)"
+#       register: _install_elastic
 
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/var/tmp/.wninstall"
-        force: true
-      become: true
+# - name: 'Beginning installation of ElasticSearch'
+#   hosts: 'localhost'
+#   become: false
+#   gather_facts: true
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   roles:
+#     - role: install-elastic
+#       when: _install_elastic.user_input | lower == 'y'
+#   post_tasks:
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/home/{{ svc_acct_name }}/.elasticinstall"
+#         owner: "{{ svc_acct_name }}"
+#         group: "{{ svc_acct_name }}"
+#         force: true
+#       when: _install_elastic.user_input | lower == 'y'
 
-- name: 'Remove id_rsa.pub and Configure Tunnel'
-  hosts: localhost
-  gather_facts: false
-  become: false
-  connection: local
-  tasks:
-    - name: 'Remove id_rsa.pub'
-      ansible.builtin.file:
-        path: ./id_rsa.pub
-        state: absent
+#     - ansible.builtin.pause:
+#         prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
+#       register: _install_cicd
 
-    - name: 'Include configure_tunnel.yml tasks'
-      ansible.builtin.include_tasks: include_tasks/configure_tunnel.yml
-      vars:
-        _targetIP: "{{ _test_c1_cp1_nic1_ip }}"
+# - name: 'Beginning installation of CI/CD Pipeline'
+#   hosts: 'localhost'
+#   become: false
+#   gather_facts: true
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   roles:
+#     - role: cicd-pipeline
+#       when: _install_cicd.user_input | lower == 'y'
+#   post_tasks:
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/home/{{ svc_acct_name }}/.cicdpipelineinstall"
+#         owner: "{{ svc_acct_name }}"
+#         group: "{{ svc_acct_name }}"
+#         force: true
+#       when: _install_cicd.user_input | lower == 'y'
 
-- name: 'Beginning installation of Kubernetes Dashboard'
-  hosts: 'localhost'
-  become: false
-  gather_facts: true
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.kd"
-      register: _file_exist
-  roles:
-    - role: install-dashboard
-      when: _file_exist.stat.exists == false
-  post_tasks:
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/var/tmp/.kd"
-        force: true
-      become: true
+#     - ansible.builtin.pause:
+#         prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
+#       register: _install_rancher
 
-    - ansible.builtin.pause:
-        prompt: "Do you wish to install ElasticSearch into the Kubernetes cluster? (Y/N)"
-      register: _install_elastic
-
-- name: 'Beginning installation of ElasticSearch'
-  hosts: 'localhost'
-  become: false
-  gather_facts: true
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  roles:
-    - role: install-elastic
-      when: _install_elastic.user_input | lower == 'y'
-  post_tasks:
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/home/{{ svc_acct_name }}/.elasticinstall"
-        owner: "{{ svc_acct_name }}"
-        group: "{{ svc_acct_name }}"
-        force: true
-      when: _install_elastic.user_input | lower == 'y'
-
-    - ansible.builtin.pause:
-        prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
-      register: _install_cicd
-
-- name: 'Beginning installation of CI/CD Pipeline'
-  hosts: 'localhost'
-  become: false
-  gather_facts: true
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  roles:
-    - role: cicd-pipeline
-      when: _install_cicd.user_input | lower == 'y'
-  post_tasks:
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/home/{{ svc_acct_name }}/.cicdpipelineinstall"
-        owner: "{{ svc_acct_name }}"
-        group: "{{ svc_acct_name }}"
-        force: true
-      when: _install_cicd.user_input | lower == 'y'
-
-    - ansible.builtin.pause:
-        prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
-      register: _install_rancher
-
-- name: 'Beginning installation of Rancher server'
-  hosts: 'localhost'
-  become: false
-  gather_facts: true
-  vars:
-    ansible_python_interpreter: '/usr/bin/python'
-    ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-  vars_files:
-    - common_vars.yml
-  roles:
-    - role: rancher-server
-      when: _install_rancher.user_input | lower == 'y'
-  post_tasks:
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/home/{{ svc_acct_name }}/.rancherinstall"
-        owner: "{{ svc_acct_name }}"
-        group: "{{ svc_acct_name }}"
-        force: true
-      when: _install_rancher.user_input | lower == 'y'
+# - name: 'Beginning installation of Rancher server'
+#   hosts: 'localhost'
+#   become: false
+#   gather_facts: true
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python'
+#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
+#   vars_files:
+#     - common_vars.yml
+#   roles:
+#     - role: rancher-server
+#       when: _install_rancher.user_input | lower == 'y'
+#   post_tasks:
+#     - ansible.builtin.copy:
+#         content: "complete"
+#         dest: "/home/{{ svc_acct_name }}/.rancherinstall"
+#         owner: "{{ svc_acct_name }}"
+#         group: "{{ svc_acct_name }}"
+#         force: true
+#       when: _install_rancher.user_input | lower == 'y'
 ...
