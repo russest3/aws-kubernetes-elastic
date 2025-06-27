@@ -10,36 +10,36 @@
   ansible.builtin.set_fact:
     c1_cp1_ip: "{{ _c1_cp1_info.instances[0].public_ip_address }}"
 
-- name: 'Get info for c1-node1'
-  amazon.aws.ec2_instance_info:
-    filters:      
-      instance-state-name: running
-      "tag:Name": c1-node1
-  register: _c1_node1_info
+# - name: 'Get info for c1-node1'
+#   amazon.aws.ec2_instance_info:
+#     filters:      
+#       instance-state-name: running
+#       "tag:Name": c1-node1
+#   register: _c1_node1_info
 
-- name: 'Get IP address of c1-node1'
-  ansible.builtin.set_fact:
-    c1_node1_ip: "{{ _c1_node1_info.instances[0].public_ip_address }}"
+# - name: 'Get IP address of c1-node1'
+#   ansible.builtin.set_fact:
+#     c1_node1_ip: "{{ _c1_node1_info.instances[0].public_ip_address }}"
 
-- name: 'Get info for c1-node2'
-  amazon.aws.ec2_instance_info:
-    filters:      
-      instance-state-name: running
-      "tag:Name": c1-node2
-  register: _c1_node2_info
+# - name: 'Get info for c1-node2'
+#   amazon.aws.ec2_instance_info:
+#     filters:      
+#       instance-state-name: running
+#       "tag:Name": c1-node2
+#   register: _c1_node2_info
 
-- name: 'Get IP address of c1-node2'
-  ansible.builtin.set_fact:
-    c1_node2_ip: "{{ _c1_node2_info.instances[0].public_ip_address }}"
+# - name: 'Get IP address of c1-node2'
+#   ansible.builtin.set_fact:
+#     c1_node2_ip: "{{ _c1_node2_info.instances[0].public_ip_address }}"
 
-- name: 'Get info for c1-node3'
-  amazon.aws.ec2_instance_info:
-    filters:      
-      instance-state-name: running
-      "tag:Name": c1-node3
-  register: _c1_node3_info
+# - name: 'Get info for c1-node3'
+#   amazon.aws.ec2_instance_info:
+#     filters:      
+#       instance-state-name: running
+#       "tag:Name": c1-node3
+#   register: _c1_node3_info
 
-- name: 'Get IP address of c1-node3'
-  ansible.builtin.set_fact:
-    c1_node3_ip: "{{ _c1_node3_info.instances[0].public_ip_address }}"
+# - name: 'Get IP address of c1-node3'
+#   ansible.builtin.set_fact:
+#     c1_node3_ip: "{{ _c1_node3_info.instances[0].public_ip_address }}"
 ...

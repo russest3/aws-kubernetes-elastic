@@ -33,7 +33,6 @@
   args:
     creates: '/etc/apt/keyrings/kubernetes-apt-keyring.gpg'
   changed_when: false
-  become: true
 
 - name: 'Add the Kubernetes apt repository'
   ansible.builtin.shell: 
@@ -44,12 +43,11 @@
   args:
     creates: '/etc/apt/sources.list.d/kubernetes.list'
   changed_when: false
-  become: true
 
 - name: 'Update the apt cache'
-  ansible.builtin.apt:
-    update_cache: true
-  become: true
+  ansible.builtin.shell: "apt-get update -y"
+  # ansible.builtin.apt:
+  #   update_cache: true
 
 - name: 'Install kubelet kubeadm and kubectl'
   ansible.builtin.apt:
@@ -58,7 +56,6 @@
       - kubeadm
       - kubectl
     state: present
-  become: true
 
 - name: 'Mark packages hold so they are not updated'
   ansible.builtin.shell:
@@ -67,5 +64,4 @@
       apt-mark hold kubelet kubeadm kubectl containerd
     executable: /bin/bash
   changed_when: false
-  become: true
 ...

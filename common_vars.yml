@@ -1,5 +1,6 @@
 ---
 _p: ''
+ansible_ssh_private_key_file: ~/.ssh/KubernetesKeyPair.pem
 svc_acct_name: 'ubuntu'
 kubernetes_version_full: '1.30.5-1.1'
 kubernetes_version_short: '1.30'
