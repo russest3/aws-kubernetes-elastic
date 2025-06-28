@@ -1,29 +1,4 @@
 ---
-# - name: 'Create ssh keys'
-#   ansible.builtin.user:
-#     name: "{{ svc_acct_name }}"
-#     generate_ssh_key: true
-
-# - name: 'Register hostname'
-#   ansible.builtin.shell: "hostname"
-#   register: _hostname
-
-# - name: 'If this is the control plane node get the current public key for later use'
-#   ansible.builtin.fetch:
-#     src: "/home/{{ svc_acct_name }}/.ssh/id_rsa.pub"
-#     dest: './id_rsa.pub'
-#     flat: true
-#   when: "'test-c1-cp' in _hostname.stdout"
-
-# - name: 'If a worker node add the control plane node to authorized keys'
-#   ansible.builtin.copy:
-#     dest: "/home/{{ svc_acct_name }}/.ssh/authorized_keys"
-#     content: "{{ lookup('file', './id_rsa.pub') }}"
-#     owner: "{{ svc_acct_name }}"
-#     group: "{{ svc_acct_name }}"
-#     mode: 0600
-#   when: "'test-c1-node' in _hostname.stdout"
-
 - name: 'Add k8s io apt repository gpg key this will likely change for each version of kubernetes release'
   ansible.builtin.shell:
     cmd: |
@@ -43,11 +18,6 @@
   args:
     creates: '/etc/apt/sources.list.d/kubernetes.list'
   changed_when: false
-
-- name: 'Update the apt cache'
-  ansible.builtin.shell: "apt-get update -y"
-  # ansible.builtin.apt:
-  #   update_cache: true
 
 - name: 'Install kubelet kubeadm and kubectl'
   ansible.builtin.apt:

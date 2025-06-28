@@ -4,6 +4,7 @@
     filters:      
       instance-state-name: running
       "tag:Name": c1-cp1
+    region: "{{ region_name }}"
   register: _c1_cp1_info
 
 - name: 'Get IP address of c1-cp1'

@@ -5,88 +5,85 @@
   become: false
   connection: local
 
-  # vars_prompt:
-  #   - name: region_name
-  #     prompt: 'Enter the AWS region you will be building in (for instance: us-east-1)'
-  #     private: false
+  vars_prompt:
+    - name: region_name
+      prompt: 'Enter the AWS region you will be building in (for instance: us-east-1)'
+      private: false
 
   vars_files:
     - common_vars.yml
 
-  # pre_tasks:
-  
-  #   - name: Check ssh key status
-  #     stat:
-  #       path: ~/.ssh/KubernetesKeyPair.pem
-  #     register: _st
+  pre_tasks:
+    - name: Check ssh key status
+      stat:
+        path: ~/.ssh/KubernetesKeyPair.pem
+      register: _st
 
-  #   - name: 'Check that ssh key is setup properly'
-  #     ansible.builtin.assert:
-  #       that:
-  #         - _st.stat.exists
-  #         - _st.stat.mode == '0400'
-  #       fail_msg: 'SSH key is not setup properly.  Please run `make sshkey` and ensure permissions are 0400'
+    - name: 'Check that ssh key is setup properly'
+      ansible.builtin.assert:
+        that:
+          - _st.stat.exists
+          - _st.stat.mode == '0400'
+        fail_msg: 'SSH key is not setup properly.  Please run `make sshkey` and ensure permissions are 0400'
 
-  #   - name: 'Retrieve AMI info of Ubuntu 24.04 image'
-  #     ansible.builtin.shell:
-  #       cmd: "aws ec2 describe-images --region {{ region_name }} --filters 'Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20250610'"
-  #     changed_when: false
-  #     register: _ami_results
+    - name: 'Retrieve AMI info of Ubuntu 24.04 image'
+      ansible.builtin.shell:
+        cmd: "aws ec2 describe-images --region {{ region_name }} --filters 'Name=name,Values=ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20250610'"
+      changed_when: false
+      register: _ami_results
 
-  #   - name: 'Format AMI output'
-  #     ansible.builtin.set_fact:
-  #       _ami_results_formatted: "{{ _ami_results.stdout | trim }}"
+    - name: 'Format AMI output'
+      ansible.builtin.set_fact:
+        _ami_results_formatted: "{{ _ami_results.stdout | trim }}"
     
-  #   - name: 'Get the AMI ID of the Image'
-  #     ansible.builtin.set_fact:
-  #       ami_id: "{{ _ami_results_formatted | json_query(_query) }}"
-  #     vars:
-  #       _query: "Images[].ImageId | [0]"
+    - name: 'Get the AMI ID of the Image'
+      ansible.builtin.set_fact:
+        ami_id: "{{ _ami_results_formatted | json_query(_query) }}"
+      vars:
+        _query: "Images[].ImageId | [0]"
 
-  #   - ansible.builtin.stat:
-  #       path: "/var/tmp/.baseclusterinstall"
-  #     register: _p
+    - ansible.builtin.stat:
+        path: "/var/tmp/.baseclusterinstall"
+      register: _p
 
-  #   - ansible.builtin.pause:
-  #       prompt: "It appears the base Kubernetes cluster build has already run.  Do you wish to rerun? (Y/N)"
-  #     when: _p.stat.exists == true
-  #     register: rerun_input
+    - ansible.builtin.pause:
+        prompt: "It appears the base Kubernetes cluster build has already run.  Do you wish to rerun? (Y/N)"
+      when: _p.stat.exists == true
+      register: rerun_input
 
-  #   - ansible.builtin.set_fact:
-  #       _rerun_input: "{{ rerun_input.user_input | lower }}"
-  #     when: _p.stat.exists == true
+    - ansible.builtin.set_fact:
+        _rerun_input: "{{ rerun_input.user_input | lower }}"
+      when: _p.stat.exists == true
 
-  #   - ansible.builtin.set_fact:
-  #       _rerun_input: 'y'
-  #     when: _p.stat.exists == false
+    - ansible.builtin.set_fact:
+        _rerun_input: 'y'
+      when: _p.stat.exists == false
 
-  # tasks:
-  #   - block:
-  #       - name: 'Include CDK tasks'
-  #         ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
-  #     when: "_rerun_input == 'y'"
+  tasks:
+    - block:
+        - name: 'Include CDK tasks'
+          ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
+      when: "_rerun_input == 'y'"
 
   post_tasks:
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/var/tmp/.baseclusterinstall"
-        force: true
-      become: true
+    - name: 'Pause 2 minutes to wait for EC2 instances to get created'
+      ansible.builtin.pause:
+        minutes: 2
 
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
-    
+
     - name: 'Add hosts to inventory'
       ansible.builtin.add_host:
         name: "{{ item }}"
       loop:
         - "{{ c1_cp1_ip }}"
-        # - "{{ c1_node1_ip }}"
-        # - "{{ c1_node2_ip }}"
-        # - "{{ c1_node3_ip }}"
+        - "{{ c1_node1_ip }}"
+        - "{{ c1_node2_ip }}"
+        - "{{ c1_node3_ip }}"
 
 - hosts: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
-  become: true
+  become: false
   gather_facts: true
   remote_user: ubuntu
 
@@ -98,7 +95,7 @@
 
   pre_tasks:
     - ansible.builtin.stat:
-        path: "/var/tmp/.cpninstall"
+        path: "/var/tmp/.baseclusterinstall"
       register: _file_exist
 
   roles:
@@ -112,25 +109,24 @@
     ansible_python_interpreter: '/usr/bin/python3'
 
   post_tasks:
-    - name: 'Get the join-command'
-      ansible.builtin.shell:
-        cmd: |
-          set -o pipefail
-          kubeadm token create --print-join-command
-        executable: /bin/bash
-      changed_when: false
-      register: _join_command
-      vars:
-        ansible_become: false
-
-    - debug:
-        var: _join_command
-
-    - ansible.builtin.copy:
-        content: "complete"
-        dest: "/var/tmp/.cpninstall"
-        force: true
+    - name: 'Mark base cluster install complete' 
+      ansible.builtin.copy:
+       content: "complete"
+       dest: "/var/tmp/.baseclusterinstall"
+       force: true
       become: true
+
+    - name: 'Getting node information...'
+      ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
+    
+    - name: 'Add hosts to inventory'
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+      loop:
+        - "{{ c1_cp1_ip }}"
+        # - "{{ c1_node1_ip }}"
+        # - "{{ c1_node2_ip }}"
+        # - "{{ c1_node3_ip }}"
 
 # - name: 'Configure c1-node1'
 #   hosts: 'localhost'

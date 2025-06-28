@@ -27,10 +27,7 @@ class CdkWorkspaceStack(Stack):
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(f"""
         add-apt-repository -y ppa:deadsnakes/ppa
-        apt install -y python3.10 containerd apt-transport-https ca-certificates curl gpg
-        rm -f /usr/bin/python3
-        ln -s /usr/bin/python3.10 /usr/bin/python3
-        ln -s /usr/bin/python3.10 /usr/bin/python
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
         apt update -y
         apt upgrade -y
         sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
