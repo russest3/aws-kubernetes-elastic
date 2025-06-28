@@ -46,7 +46,7 @@ Download this keypair as a .pem file and store it securely in your ~/.ssh/ folde
 ## Running the automation
 <pre>$ ansible-playbook automated_install.yml -i localhost,</pre>
 
-You will be prompted for a service account username and password.  This is the credentials to login to the Windows Jump Box.  The name should match your currently logged in user that has an SSH key generated in ~/.ssh/id_rsa.
+<!-- You will be prompted for a region.
 
 The automation will create the resource group resources necessary in Azure to run a 4 node Kubernetes cluster with Dashboard hosting various services offered.
 
@@ -73,4 +73,4 @@ Click on Connect
 
 Enter the IP address of the Windows 10 Jumpbox, enter the service account username and password, and click Connect
 
-![](images/azurebh3.PNG)
+![](images/azurebh3.PNG) -->
