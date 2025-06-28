@@ -59,19 +59,29 @@
         _rerun_input: 'y'
       when: _p.stat.exists == false
 
-  tasks:
-    - block:
-        - name: 'Include CDK tasks'
-          ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
-      when: "_rerun_input == 'y'"
+  # tasks:
+  #   - block:
+  #       - name: 'Include CDK tasks'
+  #         ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
+  #     when: "_rerun_input == 'y'"
 
-  post_tasks:
-    - name: 'Pause 2 minutes to wait for EC2 instances to get created'
-      ansible.builtin.pause:
-        minutes: 2
+#   post_tasks:
+#     - name: 'Pause 3 minutes to wait for EC2 instances to get created'
+#       ansible.builtin.pause:
+#         minutes: 3
 
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
+    
+    - name: 'Add hosts to /etc/hosts'
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ c1_cp1_ip }} c1-cp1 c1-cp1.example.com
+          {{ c1_node1_ip }} c1-node1 c1-node1.example.com
+          {{ c1_node2_ip }} c1-node2 c1-node2.example.com
+          {{ c1_node3_ip }} c1-node3 c1-node3.example.com
+      become: true
 
     - name: 'Add hosts to inventory'
       ansible.builtin.add_host:
@@ -83,7 +93,7 @@
         - "{{ c1_node3_ip }}"
 
 - hosts: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
-  become: false
+  become: true
   gather_facts: true
   remote_user: ubuntu
 
@@ -101,6 +111,12 @@
   roles:
     - role: all-nodes
       when: _file_exist.stat.exists == false
+      vars:
+        _hostname: c1-cp1
+        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
+        _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
+        _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
+        _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
 
     - role: control-plane-node
       when: _file_exist.stat.exists == false
@@ -116,22 +132,11 @@
        force: true
       become: true
 
-    - name: 'Getting node information...'
-      ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
-    
-    - name: 'Add hosts to inventory'
-      ansible.builtin.add_host:
-        name: "{{ item }}"
-      loop:
-        - "{{ c1_cp1_ip }}"
-        # - "{{ c1_node1_ip }}"
-        # - "{{ c1_node2_ip }}"
-        # - "{{ c1_node3_ip }}"
-
 # - name: 'Configure c1-node1'
-#   hosts: 'localhost'
+#   hosts: "{{ hostvars['localhost']['c1_node1_ip'] }}"
 #   gather_facts: true
 #   become: true
+#   remote_user: ubuntu
 #   pre_tasks:
 #     - ansible.builtin.stat:
 #         path: "/var/tmp/.wninstall"
@@ -139,11 +144,16 @@
 #   roles:
 #     - role: all-nodes
 #       when: _file_exist.stat.exists == false
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_node1_nic1_ip.split('.')[-1] | string }}"
+#       vars:
+#         _hostname: 'c1-node1'
+        # _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
+        # _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
+        # _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
+        # _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
 #   vars_files:
 #     - common_vars.yml
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python3'
 #   post_tasks:
 #     - name: 'Run the join-command to join the node to the cluster'
 #       ansible.builtin.shell:
@@ -160,9 +170,10 @@
 #       become: true
 
 # - name: 'Configure c1-node2'
-#   hosts: 'localhost'
+#   hosts: "{{ hostvars['localhost']['c1_node2_ip'] }}"
 #   gather_facts: true
 #   become: true
+#   remote_user: ubuntu
 #   pre_tasks:
 #     - ansible.builtin.stat:
 #         path: "/var/tmp/.wninstall"
@@ -170,11 +181,16 @@
 #   roles:
 #     - role: all-nodes
 #       when: _file_exist.stat.exists == false
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_node2_nic1_ip.split('.')[-1] | string }}"
+#       vars:
+#         _hostname: 'c1-node2'
+        # _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
+        # _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
+        # _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
+        # _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
 #   vars_files:
 #     - common_vars.yml
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python3'
 #   post_tasks:
 #     - name: 'Run the join-command to join the node to the cluster'
 #       ansible.builtin.shell:
@@ -191,9 +207,10 @@
 #       become: true
 
 # - name: 'Configure c1-node3'
-#   hosts: 'localhost'
+#   hosts: "{{ hostvars['localhost']['c1_node3_ip'] }}"
 #   gather_facts: true
 #   become: true
+#   remote_user: ubuntu
 #   pre_tasks:
 #     - ansible.builtin.stat:
 #         path: "/var/tmp/.wninstall"
@@ -201,11 +218,16 @@
 #   roles:
 #     - role: all-nodes
 #       when: _file_exist.stat.exists == false
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_node3_nic1_ip.split('.')[-1] | string }}"
+#       vars:
+#         _hostname: 'c1-node3'
+        # _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
+        # _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
+        # _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
+        # _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
 #   vars_files:
 #     - common_vars.yml
+#   vars:
+#     ansible_python_interpreter: '/usr/bin/python3'
 #   post_tasks:
 #     - name: 'Run the join-command to join the node to the cluster'
 #       ansible.builtin.shell:

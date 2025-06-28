@@ -26,6 +26,8 @@ class CdkWorkspaceStack(Stack):
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(f"""
+        hostname c1-cp1
+        echo 'c1-cp1' > /etc/hostname
         add-apt-repository -y ppa:deadsnakes/ppa
         apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
         apt update -y
@@ -43,10 +45,10 @@ class CdkWorkspaceStack(Stack):
         mkdir /etc/containerd
         containerd config default | tee /etc/containerd/config.toml
         sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
-        systemctl restart containerd
-        """)
+        reboot
+        """
+        )
 
-        # Create control plane node EC2 instance
         c1_cp1 = ec2.Instance(
             self, "c1-cp1",
             instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
@@ -76,26 +78,134 @@ class CdkWorkspaceStack(Stack):
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to c1-cp1")
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(443), "Allow HTTPS traffic to c1-cp1")
 
-        # Create worker nodes
-        # for i in str(1),str(2),str(3):
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(f"""
+        hostname c1-node1
+        echo 'c1-node1' > /etc/hostname
+        add-apt-repository -y ppa:deadsnakes/ppa
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt update -y
+        apt upgrade -y
+        sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+        systemctl restart sshd
+        printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
+        modprobe overlay
+        modprobe br_netfilter
+        echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
+        echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
+        sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+        sysctl -p
+        mkdir /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+        sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        reboot
+        """
+        )
 
-        #     node_name = "c1-node" + i
+        c1_node1 = ec2.Instance(
+            self, "c1-node1",
+            instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
+            instance_size=ec2.InstanceSize.MICRO),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-2": "ami-0d1b5a8c13042c939",
+            }),
+            vpc=my_vpc,
+            key_pair=keyPair,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            user_data_causes_replacement=True,
+            user_data=user_data
+        )
 
-        #     c1_node = ec2.Instance(
-        #         self, node_name,
-        #         instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
-        #         instance_size=ec2.InstanceSize.MICRO),
-        #         machine_image=ec2.MachineImage.generic_linux({
-        #             "us-east-2": "ami-0d1b5a8c13042c939",
-        #         }),
-        #         vpc=my_vpc,
-        #         key_pair=keyPair,
-        #         vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
-        #         user_data_causes_replacement=True,
-        #         user_data=user_data
-        #     )
+        Tags.of(c1_node1).add("Name", "c1-node1")
 
-        #     Tags.of(c1_node).add("Name", node_name)
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        CfnOutput(self, "c1-Node1Ip", value=c1_node1.instance_public_ip)
 
-        #     c1_node.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        #     CfnOutput(self, node_name + "-NodeIp", value=c1_node.instance_public_ip)
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(f"""
+        hostname c1-node2
+        echo 'c1-node2' > /etc/hostname
+        add-apt-repository -y ppa:deadsnakes/ppa
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt update -y
+        apt upgrade -y
+        sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+        systemctl restart sshd
+        printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
+        modprobe overlay
+        modprobe br_netfilter
+        echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
+        echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
+        sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+        sysctl -p
+        mkdir /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+        sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        reboot
+        """
+        )
+
+        c1_node2 = ec2.Instance(
+            self, "c1-node2",
+            instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
+            instance_size=ec2.InstanceSize.MICRO),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-2": "ami-0d1b5a8c13042c939",
+            }),
+            vpc=my_vpc,
+            key_pair=keyPair,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            user_data_causes_replacement=True,
+            user_data=user_data
+        )
+
+        Tags.of(c1_node2).add("Name", "c1-node2")
+
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        CfnOutput(self, "c1-Node2Ip", value=c1_node2.instance_public_ip)
+
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(f"""
+        hostname c1-node3
+        echo 'c1-node3' > /etc/hostname
+        add-apt-repository -y ppa:deadsnakes/ppa
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt update -y
+        apt upgrade -y
+        sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+        systemctl restart sshd
+        printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
+        modprobe overlay
+        modprobe br_netfilter
+        echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
+        echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
+        sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+        sysctl -p
+        mkdir /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+        sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        reboot
+        """
+        )
+
+        c1_node3 = ec2.Instance(
+            self, "c1-node3",
+            instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
+            instance_size=ec2.InstanceSize.MICRO),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-2": "ami-0d1b5a8c13042c939",
+            }),
+            vpc=my_vpc,
+            key_pair=keyPair,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            user_data_causes_replacement=True,
+            user_data=user_data
+        )
+
+        Tags.of(c1_node3).add("Name", "c1-node3")
+
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        CfnOutput(self, "c1-Node3Ip", value=c1_node3.instance_public_ip)
