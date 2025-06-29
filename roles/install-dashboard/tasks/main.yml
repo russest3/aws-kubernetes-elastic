@@ -6,8 +6,6 @@
       helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
     executable: /bin/bash
   changed_when: false
-  vars:
-    ansible_become: false
 
 - name: 'Create the kubernetes-dashboard namespace'
   ansible.builtin.shell:
@@ -16,8 +14,6 @@
       kubectl create namespace kubernetes-dashboard
     executable: /bin/bash
   changed_when: false
-  vars:
-    ansible_become: false
 
 - name: 'Install Dashboard UI'
   ansible.builtin.shell:
@@ -26,8 +22,6 @@
       helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
     executable: /bin/bash
   changed_when: false
-  vars:
-    ansible_become: false
 
 - name: 'Sleep 1 minute before updating dashboard-kong-proxy'
   ansible.builtin.pause:

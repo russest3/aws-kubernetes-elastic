@@ -59,16 +59,16 @@
         _rerun_input: 'y'
       when: _p.stat.exists == false
 
-  # tasks:
-  #   - block:
-  #       - name: 'Include CDK tasks'
-  #         ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
-  #     when: "_rerun_input == 'y'"
+  tasks:
+    - block:
+        - name: 'Include CDK tasks'
+          ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
+      when: "_rerun_input == 'y'"
 
   post_tasks:
-    # - name: 'Pause 3 minutes to wait for EC2 instances to get created'
-    #   ansible.builtin.pause:
-    #     minutes: 3
+    - name: 'Pause 3 minutes to wait for EC2 instances to get created'
+      ansible.builtin.pause:
+        minutes: 3
 
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
@@ -77,10 +77,10 @@
       ansible.builtin.blockinfile:
         path: /etc/hosts
         block: |
-          {{ c1_cp1_ip }} c1-cp1 {{ c1_cp1_name }}
-          {{ c1_node1_ip }} c1-node1 {{ c1_node1_name }}
-          {{ c1_node2_ip }} c1-node2 {{ c1_node2_name }}
-          {{ c1_node3_ip }} c1-node3 {{ c1_node3_name }}
+          {{ c1_cp1_public_ip }} c1-cp1 c1-cp1.example.com
+          {{ c1_node1_public_ip }} c1-node1 c1-node1.example.com
+          {{ c1_node2_public_ip }} c1-node2 c1-node2.example.com
+          {{ c1_node3_public_ip }} c1-node3 c1-node3.example.com
       become: true
 
     - name: 'Add hosts to inventory'
@@ -88,12 +88,12 @@
         name: "{{ item.name }}"
         ansible_host: "{{ item.ip }}"
       loop:
-        - { name: c1_cp1_name, ip: c1_cp1_ip }
-        - { name: c1_node1_name, ip: c1_node1_name }
-        - { name: c1_node2_name, ip: c1_node2_name }
-        - { name: c1_node3_name, ip: c1_node3_name }
+        - { name: 'c1-cp1', ip: '{{ c1_cp1_public_ip }}' }
+        - { name: 'c1-node1', ip: '{{ c1_node1_public_ip }}' }
+        - { name: 'c1-node2', ip: '{{ c1_node2_public_ip }}' }
+        - { name: 'c1-node3', ip: '{{ c1_node3_public_ip }}' }
     
-- hosts: "{{ hostvars['localhost']['c1_cp1_name'] }}"
+- hosts: c1-cp1
   become: true
   gather_facts: true
   remote_user: ubuntu
@@ -104,37 +104,37 @@
   environment:
     ANSIBLE_HOST_KEY_CHECKING: false
 
-#   pre_tasks:
-#     - ansible.builtin.stat:
-#         path: "/var/tmp/.baseclusterinstall"
-#       register: _file_exist
+  pre_tasks:
+    - ansible.builtin.stat:
+        path: "/var/tmp/.baseclusterinstall"
+      register: _file_exist
 
   roles:
-#     - role: all-nodes
-#       when: _file_exist.stat.exists == false
-#       vars:
-#         _hostname: c1-cp1
-#         _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
-#         _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
-#         _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
-#         _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
+    - role: all-nodes
+      when: _file_exist.stat.exists == false
+      vars:
+        _hostname: c1-cp1
+        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
+        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
+        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
+        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
 
     - role: control-plane-node
-      # when: _file_exist.stat.exists == false
+      when: _file_exist.stat.exists == false
 
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python3'
+  vars:
+    ansible_python_interpreter: '/usr/bin/python3'
 
-#   post_tasks:
-#     - name: 'Mark base cluster install complete' 
-#       ansible.builtin.copy:
-#        content: "complete"
-#        dest: "/var/tmp/.baseclusterinstall"
-#        force: true
-#       become: true
+  post_tasks:
+    - name: 'Mark base cluster install complete' 
+      ansible.builtin.copy:
+       content: "complete"
+       dest: "/var/tmp/.baseclusterinstall"
+       force: true
+      become: true
 
 - name: 'Configure c1-node1'
-  hosts: "{{ hostvars['localhost']['c1_node1_ip'] }}"
+  hosts: c1-node1
   gather_facts: true
   become: true
   remote_user: ubuntu
@@ -147,20 +147,28 @@
       when: _file_exist.stat.exists == false
       vars:
         _hostname: 'c1-node1'
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
+        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
+        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
+        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
+        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
   vars_files:
     - common_vars.yml
+
   vars:
     ansible_python_interpreter: '/usr/bin/python3'
+
   post_tasks:
+    - name: 'Get the join command'
+      ansible.builtin.pause:
+        prompt: "Please paste in the join command: "
+      register: _join_command
+      delegate_to: localhost
+
     - name: 'Run the join-command to join the node to the cluster'
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          {{ hostvars['c1-cp1']['_join_command.stdout'] }}
+          {{ _join_command.user_input }}
         executable: /bin/bash
       changed_when: false
 
@@ -171,7 +179,7 @@
       become: true
 
 - name: 'Configure c1-node2'
-  hosts: "{{ hostvars['localhost']['c1_node2_ip'] }}"
+  hosts: c1-node2
   gather_facts: true
   become: true
   remote_user: ubuntu
@@ -179,25 +187,35 @@
     - ansible.builtin.stat:
         path: "/var/tmp/.wninstall"
       register: _file_exist
+
   roles:
     - role: all-nodes
       when: _file_exist.stat.exists == false
       vars:
         _hostname: 'c1-node2'
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
+        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
+        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
+        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
+        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
+
   vars_files:
     - common_vars.yml
+
   vars:
     ansible_python_interpreter: '/usr/bin/python3'
+
   post_tasks:
+    - name: 'Get the join command'
+      ansible.builtin.pause:
+        prompt: "Please paste in the join command: "
+      register: _join_command
+      delegate_to: localhost
+
     - name: 'Run the join-command to join the node to the cluster'
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          {{ hostvars['c1_cp1_ip'][ '_join_command.stdout'] }}
+          {{ _join_command.user_input }}
         executable: /bin/bash
       changed_when: false
 
@@ -208,33 +226,44 @@
       become: true
 
 - name: 'Configure c1-node3'
-  hosts: "{{ hostvars['localhost']['c1_node3_ip'] }}"
+  hosts: c1-node3
   gather_facts: true
   become: true
   remote_user: ubuntu
+
   pre_tasks:
     - ansible.builtin.stat:
         path: "/var/tmp/.wninstall"
       register: _file_exist
+
   roles:
     - role: all-nodes
       when: _file_exist.stat.exists == false
       vars:
         _hostname: 'c1-node3'
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_ip'] }}"
+        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
+        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
+        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
+        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
+
   vars_files:
     - common_vars.yml
+
   vars:
     ansible_python_interpreter: '/usr/bin/python3'
+
   post_tasks:
+    - name: 'Get the join command'
+      ansible.builtin.pause:
+        prompt: "Please paste in the join command: "
+      register: _join_command
+      delegate_to: localhost
+
     - name: 'Run the join-command to join the node to the cluster'
       ansible.builtin.shell:
         cmd: |
           set -o pipefail
-          {{ hostvars['c1_cp1_ip'][ '_join_command.stdout'] }}
+          {{ _join_command.user_input }}
         executable: /bin/bash
       changed_when: false
 
@@ -244,101 +273,121 @@
         force: true
       become: true
 
-# - name: 'Beginning installation of Kubernetes Dashboard'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   pre_tasks:
-#     - ansible.builtin.stat:
-#         path: "/var/tmp/.kd"
-#       register: _file_exist
-#   roles:
-#     - role: install-dashboard
-#       when: _file_exist.stat.exists == false
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/var/tmp/.kd"
-#         force: true
-#       become: true
+- name: 'Beginning installation of Kubernetes Dashboard'
+  hosts: c1-cp1
+  become: false
+  gather_facts: true
+  remote_user: ubuntu
 
-#     - ansible.builtin.pause:
-#         prompt: "Do you wish to install ElasticSearch into the Kubernetes cluster? (Y/N)"
-#       register: _install_elastic
+  vars_files:
+    - common_vars.yml
 
-# - name: 'Beginning installation of ElasticSearch'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   roles:
-#     - role: install-elastic
-#       when: _install_elastic.user_input | lower == 'y'
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/home/{{ svc_acct_name }}/.elasticinstall"
-#         owner: "{{ svc_acct_name }}"
-#         group: "{{ svc_acct_name }}"
-#         force: true
-#       when: _install_elastic.user_input | lower == 'y'
+  vars:
+    ansible_python_interpreter: '/usr/bin/python3'
 
-#     - ansible.builtin.pause:
-#         prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
-#       register: _install_cicd
+  environment:
+    ANSIBLE_HOST_KEY_CHECKING: false
+  
+  pre_tasks:
+    - ansible.builtin.stat:
+        path: "/var/tmp/.kd"
+      register: _file_exist
+  
+  roles:
+    - role: install-dashboard
+      when: _file_exist.stat.exists == false
+  
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/var/tmp/.kd"
+        force: true
+      become: true
 
-# - name: 'Beginning installation of CI/CD Pipeline'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   roles:
-#     - role: cicd-pipeline
-#       when: _install_cicd.user_input | lower == 'y'
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/home/{{ svc_acct_name }}/.cicdpipelineinstall"
-#         owner: "{{ svc_acct_name }}"
-#         group: "{{ svc_acct_name }}"
-#         force: true
-#       when: _install_cicd.user_input | lower == 'y'
+    - ansible.builtin.pause:
+        prompt: "Do you wish to install ElasticSearch into the Kubernetes cluster? (Y/N)"
+      register: _install_elastic
 
-#     - ansible.builtin.pause:
-#         prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
-#       register: _install_rancher
+- name: 'Beginning installation of ElasticSearch'
+  hosts: c1-cp1
+  become: false
+  gather_facts: true
+  remote_user: ubuntu
 
-# - name: 'Beginning installation of Rancher server'
-#   hosts: 'localhost'
-#   become: false
-#   gather_facts: true
-#   vars:
-#     ansible_python_interpreter: '/usr/bin/python'
-#     ansible_port: "222{{ _test_c1_cp1_nic1_ip.split('.')[-1] | string }}"
-#   vars_files:
-#     - common_vars.yml
-#   roles:
-#     - role: rancher-server
-#       when: _install_rancher.user_input | lower == 'y'
-#   post_tasks:
-#     - ansible.builtin.copy:
-#         content: "complete"
-#         dest: "/home/{{ svc_acct_name }}/.rancherinstall"
-#         owner: "{{ svc_acct_name }}"
-#         group: "{{ svc_acct_name }}"
-#         force: true
-#       when: _install_rancher.user_input | lower == 'y'
+  vars_files:
+    - common_vars.yml
+
+  vars:
+    ansible_python_interpreter: '/usr/bin/python3'
+
+  roles:
+    - role: install-elastic
+      when: _install_elastic.user_input | lower == 'y'
+
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/home/{{ svc_acct_name }}/.elasticinstall"
+        owner: "{{ svc_acct_name }}"
+        group: "{{ svc_acct_name }}"
+        force: true
+      when: _install_elastic.user_input | lower == 'y'
+
+    - ansible.builtin.pause:
+        prompt: "Do you wish to install the ArgoCD CI/CD Pipeline into the Kubernetes cluster? (Y/N)"
+      register: _install_cicd
+
+- name: 'Beginning installation of CI/CD Pipeline'
+  hosts: c1-cp1
+  become: false
+  gather_facts: true
+  remote_user: ubuntu
+
+  vars:
+    ansible_python_interpreter: '/usr/bin/python3'
+
+  vars_files:
+    - common_vars.yml
+
+  roles:
+    - role: cicd-pipeline
+      when: _install_cicd.user_input | lower == 'y'
+
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/home/{{ svc_acct_name }}/.cicdpipelineinstall"
+        owner: "{{ svc_acct_name }}"
+        group: "{{ svc_acct_name }}"
+        force: true
+      when: _install_cicd.user_input | lower == 'y'
+
+    - ansible.builtin.pause:
+        prompt: "Do you wish to install Rancher Server into the Kubernetes cluster? (Y/N)"
+      register: _install_rancher
+
+- name: 'Beginning installation of Rancher server'
+  hosts: c1-cp1
+  become: false
+  gather_facts: true
+  remote_user: ubuntu
+
+  vars:
+    ansible_python_interpreter: '/usr/bin/python3'
+
+  vars_files:
+    - common_vars.yml
+
+  roles:
+    - role: rancher-server
+      when: _install_rancher.user_input | lower == 'y'
+
+  post_tasks:
+    - ansible.builtin.copy:
+        content: "complete"
+        dest: "/home/{{ svc_acct_name }}/.rancherinstall"
+        owner: "{{ svc_acct_name }}"
+        group: "{{ svc_acct_name }}"
+        force: true
+      when: _install_rancher.user_input | lower == 'y'
 ...
