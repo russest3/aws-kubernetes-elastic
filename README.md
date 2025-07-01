@@ -43,6 +43,10 @@ Create a AWS EC2 KeyPair in the AWS Management Console, name it "KubernetesKeyPa
 
 Download this keypair as a .pem file and store it securely in your ~/.ssh/ folder
 
+Create a self-signed certificate in Certificates Manager, name it "KubernetesCert"
+
+Record the ARN of these certificates
+
 ## Running the automation
 <pre>$ ansible-playbook automated_install.yml -i localhost,</pre>
 

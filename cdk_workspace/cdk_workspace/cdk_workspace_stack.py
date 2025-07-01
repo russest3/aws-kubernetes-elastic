@@ -1,10 +1,8 @@
 from aws_cdk import (
-    # Duration,
     Stack,
     CfnOutput,
     Tags,
     aws_ec2 as ec2
-    # aws_sqs as sqs,
 )
 from constructs import Construct
 
@@ -29,7 +27,7 @@ class CdkWorkspaceStack(Stack):
         hostname c1-cp1
         echo 'c1-cp1' > /etc/hostname
         add-apt-repository -y ppa:deadsnakes/ppa
-        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg net-tools
         apt update -y
         apt upgrade -y
         sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
@@ -45,6 +43,11 @@ class CdkWorkspaceStack(Stack):
         mkdir /etc/containerd
         containerd config default | tee /etc/containerd/config.toml
         sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
         reboot
         """
         )
@@ -78,6 +81,7 @@ class CdkWorkspaceStack(Stack):
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to c1-cp1")
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(443), "Allow HTTPS traffic to c1-cp1")
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(6443), "Allow HTTP/6443 for kubeapi traffic to c1-cp1")
+        c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow HTTP/8443 for kubernetes dashboard traffic to c1-cp1")
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(f"""
@@ -100,6 +104,11 @@ class CdkWorkspaceStack(Stack):
         mkdir /etc/containerd
         containerd config default | tee /etc/containerd/config.toml
         sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
         reboot
         """
         )
@@ -123,7 +132,8 @@ class CdkWorkspaceStack(Stack):
         c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
         c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
         c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        # c1_node1.connections.allow_from_any_ipv4(ec2.Port("tcp", from_port=30000, to_port=32767), "Allow NodePort Services to worker node")
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
         CfnOutput(self, "c1-Node1Ip", value=c1_node1.instance_public_ip)
 
         user_data = ec2.UserData.for_linux()
@@ -147,6 +157,11 @@ class CdkWorkspaceStack(Stack):
         mkdir /etc/containerd
         containerd config default | tee /etc/containerd/config.toml
         sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
         reboot
         """
         )
@@ -170,7 +185,8 @@ class CdkWorkspaceStack(Stack):
         c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
         c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
         c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        # c1_node2.connections.allow_from_any_ipv4(ec2.Port("tcp", from_port=30000, to_port=32767), "Allow NodePort Services to worker node")
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
         CfnOutput(self, "c1-Node2Ip", value=c1_node2.instance_public_ip)
 
         user_data = ec2.UserData.for_linux()
@@ -194,6 +210,11 @@ class CdkWorkspaceStack(Stack):
         mkdir /etc/containerd
         containerd config default | tee /etc/containerd/config.toml
         sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
         reboot
         """
         )
@@ -217,5 +238,6 @@ class CdkWorkspaceStack(Stack):
         c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
         c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
         c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        # c1_node3.connections.allow_from_any_ipv4(ec2.Port("tcp", from_port=30000, to_port=32767), "Allow NodePort Services to worker node")
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
         CfnOutput(self, "c1-Node3Ip", value=c1_node3.instance_public_ip)

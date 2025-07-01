@@ -5,6 +5,7 @@
   become: false
   connection: local
 
+# Need two more prompts for Certificate ARNs
   vars_prompt:
     - name: region_name
       prompt: 'Enter the AWS region you will be building in (for instance: us-east-1)'
@@ -60,15 +61,14 @@
       when: _p.stat.exists == false
 
   tasks:
-    - block:
-        - name: 'Include CDK tasks'
-          ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
+    - name: 'Include CDK tasks'
+      ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
       when: "_rerun_input == 'y'"
 
   post_tasks:
-    - name: 'Pause 3 minutes to wait for EC2 instances to get created'
+    - name: 'Pause 4 minutes to wait for EC2 instances to get created'
       ansible.builtin.pause:
-        minutes: 3
+        minutes: 4
 
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
@@ -109,16 +109,17 @@
         path: "/var/tmp/.baseclusterinstall"
       register: _file_exist
 
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-      vars:
-        _hostname: c1-cp1
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
+  tasks:
+    - name: 'Update /etc/hosts'
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ hostvars['localhost']['c1_cp1_private_ip'] }} c1-cp1.example.com c1-cp1
+          {{ hostvars['localhost']['c1_node1_private_ip'] }} c1-node1.example.com c1-node1
+          {{ hostvars['localhost']['c1_node2_private_ip'] }} c1-node2.example.com c1-node2
+          {{ hostvars['localhost']['c1_node3_private_ip'] }} c1-node3.example.com c1-node3
 
+  roles:
     - role: control-plane-node
       when: _file_exist.stat.exists == false
 
@@ -138,24 +139,27 @@
   gather_facts: true
   become: true
   remote_user: ubuntu
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.wninstall"
-      register: _file_exist
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-      vars:
-        _hostname: 'c1-node1'
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
+
   vars_files:
     - common_vars.yml
 
   vars:
     ansible_python_interpreter: '/usr/bin/python3'
+
+  pre_tasks:
+    - ansible.builtin.stat:
+        path: "/var/tmp/.wninstall"
+      register: _file_exist
+
+  tasks:
+    - name: 'Update /etc/hosts'
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ hostvars['localhost']['c1_cp1_private_ip'] }} c1-cp1.example.com c1-cp1
+          {{ hostvars['localhost']['c1_node1_private_ip'] }} c1-node1.example.com c1-node1
+          {{ hostvars['localhost']['c1_node2_private_ip'] }} c1-node2.example.com c1-node2
+          {{ hostvars['localhost']['c1_node3_private_ip'] }} c1-node3.example.com c1-node3
 
   post_tasks:
     - name: 'Get the join command'
@@ -183,26 +187,27 @@
   gather_facts: true
   become: true
   remote_user: ubuntu
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.wninstall"
-      register: _file_exist
-
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-      vars:
-        _hostname: 'c1-node2'
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
 
   vars_files:
     - common_vars.yml
 
   vars:
     ansible_python_interpreter: '/usr/bin/python3'
+
+  pre_tasks:
+    - ansible.builtin.stat:
+        path: "/var/tmp/.wninstall"
+      register: _file_exist
+
+  tasks:
+    - name: 'Update /etc/hosts'
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ hostvars['localhost']['c1_cp1_private_ip'] }} c1-cp1.example.com c1-cp1
+          {{ hostvars['localhost']['c1_node1_private_ip'] }} c1-node1.example.com c1-node1
+          {{ hostvars['localhost']['c1_node2_private_ip'] }} c1-node2.example.com c1-node2
+          {{ hostvars['localhost']['c1_node3_private_ip'] }} c1-node3.example.com c1-node3
 
   post_tasks:
     - name: 'Get the join command'
@@ -231,26 +236,26 @@
   become: true
   remote_user: ubuntu
 
-  pre_tasks:
-    - ansible.builtin.stat:
-        path: "/var/tmp/.wninstall"
-      register: _file_exist
-
-  roles:
-    - role: all-nodes
-      when: _file_exist.stat.exists == false
-      vars:
-        _hostname: 'c1-node3'
-        _c1_cp1_ip: "{{ hostvars['localhost']['c1_cp1_private_ip'] }}"
-        _node1_ip: "{{ hostvars['localhost']['c1_node1_private_ip'] }}"
-        _node2_ip: "{{ hostvars['localhost']['c1_node2_private_ip'] }}"
-        _node3_ip: "{{ hostvars['localhost']['c1_node3_private_ip'] }}"
-
   vars_files:
     - common_vars.yml
 
   vars:
     ansible_python_interpreter: '/usr/bin/python3'
+
+  pre_tasks:
+    - ansible.builtin.stat:
+        path: "/var/tmp/.wninstall"
+      register: _file_exist
+
+  tasks:
+    - name: 'Update /etc/hosts'
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          {{ hostvars['localhost']['c1_cp1_private_ip'] }} c1-cp1.example.com c1-cp1
+          {{ hostvars['localhost']['c1_node1_private_ip'] }} c1-node1.example.com c1-node1
+          {{ hostvars['localhost']['c1_node2_private_ip'] }} c1-node2.example.com c1-node2
+          {{ hostvars['localhost']['c1_node3_private_ip'] }} c1-node3.example.com c1-node3
 
   post_tasks:
     - name: 'Get the join command'
