@@ -1,4 +1,9 @@
 ---
+# temporary
+_server_cert_arn: "arn:aws:acm:us-east-2:014420964653:certificate/abcd03cd-c42f-4538-9acd-a06d4a5fe529"
+_client_cert_arn: "arn:aws:acm:us-east-2:014420964653:certificate/5d1558f4-e843-4ea0-b9c2-9682d59a1d9f"
+_account_num: "014420964653"
+# temporary
 _p: ''
 ansible_ssh_private_key_file: ~/.ssh/KubernetesKeyPair.pem
 svc_acct_name: 'ubuntu'

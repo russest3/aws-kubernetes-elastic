@@ -10,7 +10,7 @@ from cdk_workspace.cdk_workspace_stack import VPNStack
 
 app = cdk.App()
 
-env = Environment(account="014420964653", region="us-east-2")
+env = Environment(account="{{ _account_num }}", region="{{ region_name }}")
 
 root_stack = cdk.Stack(app, "RootStack")
 
