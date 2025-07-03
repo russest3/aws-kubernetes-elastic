@@ -1,5 +1,4 @@
 from aws_cdk import (
-    Stack,
     NestedStack,
     RemovalPolicy,
     aws_ec2 as ec2,

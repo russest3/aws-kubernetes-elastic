@@ -90,7 +90,9 @@ class VPNStack(NestedStack):
 
         cfn_client_vpn_target_network_association = ec2.CfnClientVpnTargetNetworkAssociation(self, "MyCfnClientVpnTargetNetworkAssociation",
             client_vpn_endpoint_id=client_vpn_endpoint.attr_id,
-            subnet_id=my_vpc.select_subnets(subnet_group_name="PrivateWithEgressSubnet")
+            subnet_id=str(my_vpc.select_subnets(subnet_group_name="PrivateWithEgressSubnet"))
+            # subnet_id=
+            # This aint working
         )
 
         # Create authorization rule

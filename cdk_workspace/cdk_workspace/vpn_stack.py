@@ -1,5 +1,10 @@
 from aws_cdk import (
     NestedStack,
+    RemovalPolicy,
+    aws_ec2 as ec2,
+    aws_s3 as s3,
+    aws_route53 as route53,
+    aws_route53_targets as targets
 )
 from constructs import Construct
 
@@ -11,7 +16,20 @@ class VPNStack(NestedStack):
         # Create VPC
         my_vpc = ec2.Vpc(
             self, "KubernetesVpc",
-            nat_gateways=0
+            nat_gateways=0,
+            max_azs=1,  # Default is all AZs in region
+            subnet_configuration=[
+                ec2.SubnetConfiguration(
+                    name="PublicSubnet",
+                    subnet_type=ec2.SubnetType.PUBLIC,
+                    cidr_mask=24
+                ),
+                ec2.SubnetConfiguration(
+                    name="PrivateWithEgressSubnet",
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    cidr_mask=24
+                )
+            ]
         )
 
         keyPair = ec2.KeyPair.from_key_pair_attributes(self, "KeyPair",
@@ -50,14 +68,13 @@ class VPNStack(NestedStack):
         client_cert_arn = "arn:aws:acm:us-east-2:014420964653:certificate/5d1558f4-e843-4ea0-b9c2-9682d59a1d9f"
 
         # Create a Client VPN endpoint
-        # Need to add a target network association
         client_vpn_endpoint = ec2.CfnClientVpnEndpoint(self, "ClientVpnEndpoint",
             authentication_options=[{
                 "type": "certificate-authentication",
                 "mutualAuthentication": {
                     "clientRootCertificateChainArn": client_cert_arn
                 }
-            }],
+            }],            
             client_cidr_block="10.100.0.0/22",
             connection_log_options={
                 "enabled": False
@@ -68,11 +85,17 @@ class VPNStack(NestedStack):
             description="Client VPN endpoint for secure remote access",
             split_tunnel=True,
             vpc_id=my_vpc.vpc_id,
-            dns_servers=["8.8.8.8", "8.8.4.4"]
+            dns_servers=["8.8.8.8", "8.8.4.4"],
+        )
+
+        cfn_client_vpn_target_network_association = ec2.CfnClientVpnTargetNetworkAssociation(self, "MyCfnClientVpnTargetNetworkAssociation",
+            client_vpn_endpoint_id=client_vpn_endpoint.attr_id,
+            subnet_id=str(my_vpc.select_subnets(subnet_group_name="PrivateWithEgressSubnet"))
+            # subnet_id=
+            # This aint working
         )
 
         # Create authorization rule
-        # client_vpn_endpoint.add_authorization_rule("Rule",
-        #     cidr="10.0.10.0/32",
-        #     group_id="group-id"
-        # )
+        client_vpn_endpoint.add_authorization_rule(self, "Rule",
+            cidr="10.0.10.0/32",             
+        )
