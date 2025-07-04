@@ -43,7 +43,7 @@ class VPNStack(NestedStack):
             removal_policy=RemovalPolicy.DESTROY,
             block_public_access=s3.BlockPublicAccess(block_public_acls=False,
                                                       block_public_policy=False,
-                                                      ignore_public_acls=False,
+                                                      ignore_public_acls=True,
                                                       restrict_public_buckets=False)
         )
 
@@ -63,6 +63,22 @@ class VPNStack(NestedStack):
         server_cert_arn = "arn:aws:acm:us-east-2:014420964653:certificate/abcd03cd-c42f-4538-9acd-a06d4a5fe529"
         client_cert_arn = "arn:aws:acm:us-east-2:014420964653:certificate/5d1558f4-e843-4ea0-b9c2-9682d59a1d9f"
 
+        # Create a security group for the VPN endpoint
+        vpn_endpoint_sg = ec2.SecurityGroup(
+            self, "VpnEndpointSG",
+            vpc=self.my_vpc,
+            security_group_name="VpnEndpointSG",
+            description="Allow https for vpn",
+            allow_all_outbound=False
+        )
+
+        # Add an ingress rule to allow HTTPS traffic from anywhere
+        vpn_endpoint_sg.add_ingress_rule(
+            peer=ec2.Peer.any_ipv4(),
+            connection=ec2.Port.tcp(443),
+            description="Allow HTTPS traffic"
+        )
+
         # Create a Client VPN endpoint
         client_vpn_endpoint = ec2.CfnClientVpnEndpoint(self, "ClientVpnEndpoint",
             authentication_options=[{
@@ -78,6 +94,8 @@ class VPNStack(NestedStack):
             server_certificate_arn=server_cert_arn,
             vpn_port=443,
             transport_protocol="tcp",
+            self_service_portal="enabled",
+            security_groups = [self, vpn_endpoint_sg]
             description="Client VPN endpoint for secure remote access",
             split_tunnel=True,
             vpc_id=self.my_vpc.vpc_id,
@@ -99,11 +117,11 @@ class VPNStack(NestedStack):
         )
 
         vpc_endpoint = self.my_vpc.add_interface_endpoint("ClientVpnEndpoint", service=ec2.InterfaceVpcEndpointAwsService.S3)
-        route_table = self.my_vpc.private_subnets[0].route_table # Example: Get a route table
+        route_table = self.my_vpc.private_subnets[0].route_table
 
         ec2.CfnRoute(self, "RouteToVpce",
             route_table_id=route_table.route_table_id,
-            destination_cidr_block="0.0.0.0/0", # Example destination, adjust as needed
+            destination_cidr_block="10.100.0.0/22",
             vpc_endpoint_id=vpc_endpoint.vpc_endpoint_id
         )
 
