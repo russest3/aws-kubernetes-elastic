@@ -16,7 +16,6 @@ root_stack = cdk.Stack(app, "RootStack", env=env)
 
 vpn_stack = VPNStack(root_stack, "VPNStack")
 
-application_stack = CdkWorkspaceStack(root_stack, "CdkWorkspaceStack",
-                 my_vpc=vpn_stack.my_vpc)
+application_stack = CdkWorkspaceStack(root_stack, "CdkWorkspaceStack", my_vpc=vpn_stack.my_vpc)
 
 app.synth()
