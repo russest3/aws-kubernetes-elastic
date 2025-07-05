@@ -18,6 +18,7 @@ class VPNStack(NestedStack):
         self.my_vpc = ec2.Vpc(
             self, "KubernetesVpc",
             nat_gateways=0,
+            vpn_gateway=True,
             max_azs=1,
             subnet_configuration=[
                 ec2.SubnetConfiguration(
@@ -95,7 +96,7 @@ class VPNStack(NestedStack):
             vpn_port=443,
             transport_protocol="tcp",
             self_service_portal="enabled",
-            security_groups = [self, vpn_endpoint_sg]
+            security_group_ids = [ vpn_endpoint_sg.security_group_id ],
             description="Client VPN endpoint for secure remote access",
             split_tunnel=True,
             vpc_id=self.my_vpc.vpc_id,

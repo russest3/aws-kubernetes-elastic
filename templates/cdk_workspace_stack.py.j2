@@ -3,11 +3,11 @@ from aws_cdk import (
     Tags,
     CfnOutput,
     aws_ec2 as ec2,
-    aws_ssm as ssm,
-    aws_route53 as route53,
-    aws_certificatemanager as acm,
-    aws_s3 as s3,
-    aws_route53_targets as targets
+    # aws_ssm as ssm,
+    # aws_route53 as route53,
+    # aws_certificatemanager as acm,
+    # aws_s3 as s3,
+    # aws_route53_targets as targets
 )
 from constructs import Construct
 
