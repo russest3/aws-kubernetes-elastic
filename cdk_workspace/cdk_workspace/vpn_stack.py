@@ -131,19 +131,19 @@ class VPNStack(NestedStack):
         # )
 
         # Output the VPN endpoint ID
-    #     CfnOutput(self, "ClientVpnEndpointId",
-    #         value=client_vpn_endpoint.ref,
-    #         description="Client VPN Endpoint ID"
-    #     )
+        CfnOutput(self, "ClientVpnEndpointId",
+            value=client_vpn_endpoint.ref,
+            description="Client VPN Endpoint ID"
+        )
 
-    #     CfnOutput(self, "ClientVpnConfigFile",
-    #         value=f"aws ec2 export-client-vpn-client-configuration --client-vpn-endpoint-id {client_vpn_endpoint.ref} --output text > client-config.ovpn",
-    #         description="Command to download VPN configuration"
-    #     )
+        CfnOutput(self, "ClientVpnConfigFile",
+            value=f"aws ec2 export-client-vpn-client-configuration --client-vpn-endpoint-id {client_vpn_endpoint.ref} --output text > client-config.ovpn",
+            description="Command to download VPN configuration"
+        )
 
-    #    # Output the VPC ID
-    #     CfnOutput(
-    #         self, "VpcId",
-    #         value=self.my_vpc.vpc_id,
-    #         description="ID of the VPC with Client VPN Gateway Endpoint"
-    #     )
+       # Output the VPC ID
+        CfnOutput(
+            self, "VpcId",
+            value=self.my_vpc.vpc_id,
+            description="ID of the VPC with Client VPN Gateway Endpoint"
+        )

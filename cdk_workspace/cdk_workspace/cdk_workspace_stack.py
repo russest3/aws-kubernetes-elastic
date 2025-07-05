@@ -3,11 +3,6 @@ from aws_cdk import (
     Tags,
     CfnOutput,
     aws_ec2 as ec2,
-    # aws_ssm as ssm,
-    # aws_route53 as route53,
-    # aws_certificatemanager as acm,
-    # aws_s3 as s3,
-    # aws_route53_targets as targets
 )
 from constructs import Construct
 
@@ -84,161 +79,161 @@ class CdkWorkspaceStack(NestedStack):
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(6443), "Allow HTTP/6443 for kubeapi traffic to c1-cp1")
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow HTTP/8443 for kubernetes dashboard traffic to c1-cp1")
 
-        # user_data = ec2.UserData.for_linux()
-        # user_data.add_commands(f"""
-        # hostname c1-node1
-        # echo 'c1-node1' > /etc/hostname
-        # add-apt-repository -y ppa:deadsnakes/ppa
-        # apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
-        # apt update -y
-        # apt upgrade -y
-        # sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        # sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
-        # systemctl restart sshd
-        # printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
-        # modprobe overlay
-        # modprobe br_netfilter
-        # echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
-        # echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
-        # sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-        # sysctl -p
-        # mkdir /etc/containerd
-        # containerd config default | tee /etc/containerd/config.toml
-        # sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
-        # curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        # echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-        # apt update -y
-        # apt install -y kubelet kubeadm kubectl
-        # apt-mark hold kubelet kubeadm kubectl containerd
-        # reboot
-        # """
-        # )
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(f"""
+        hostname c1-node1
+        echo 'c1-node1' > /etc/hostname
+        add-apt-repository -y ppa:deadsnakes/ppa
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt update -y
+        apt upgrade -y
+        sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+        systemctl restart sshd
+        printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
+        modprobe overlay
+        modprobe br_netfilter
+        echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
+        echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
+        sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+        sysctl -p
+        mkdir /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+        sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
+        reboot
+        """
+        )
 
-        # c1_node1 = ec2.Instance(
-        #     self, "c1-node1",
-        #     instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
-        #     instance_size=ec2.InstanceSize.MICRO),
-        #     machine_image=ec2.MachineImage.generic_linux({
-        #         "us-east-2": "ami-0d1b5a8c13042c939",
-        #     }),
-        #     vpc=my_vpc,
-        #     key_pair=keyPair,
-        #     vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
-        #     user_data_causes_replacement=True,
-        #     user_data=user_data
-        # )
+        c1_node1 = ec2.Instance(
+            self, "c1-node1",
+            instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
+            instance_size=ec2.InstanceSize.MICRO),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-2": "ami-0d1b5a8c13042c939",
+            }),
+            vpc=my_vpc,
+            key_pair=keyPair,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            user_data_causes_replacement=True,
+            user_data=user_data
+        )
 
-        # Tags.of(c1_node1).add("Name", "c1-node1")
+        Tags.of(c1_node1).add("Name", "c1-node1")
 
-        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
-        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
-        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
-        # CfnOutput(self, "c1-Node1Ip", value=c1_node1.instance_public_ip)
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
+        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+        CfnOutput(self, "c1-Node1Ip", value=c1_node1.instance_public_ip)
 
-        # user_data = ec2.UserData.for_linux()
-        # user_data.add_commands(f"""
-        # hostname c1-node2
-        # echo 'c1-node2' > /etc/hostname
-        # add-apt-repository -y ppa:deadsnakes/ppa
-        # apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
-        # apt update -y
-        # apt upgrade -y
-        # sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        # sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
-        # systemctl restart sshd
-        # printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
-        # modprobe overlay
-        # modprobe br_netfilter
-        # echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
-        # echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
-        # sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-        # sysctl -p
-        # mkdir /etc/containerd
-        # containerd config default | tee /etc/containerd/config.toml
-        # sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
-        # curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        # echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-        # apt update -y
-        # apt install -y kubelet kubeadm kubectl
-        # apt-mark hold kubelet kubeadm kubectl containerd
-        # reboot
-        # """
-        # )
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(f"""
+        hostname c1-node2
+        echo 'c1-node2' > /etc/hostname
+        add-apt-repository -y ppa:deadsnakes/ppa
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt update -y
+        apt upgrade -y
+        sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+        systemctl restart sshd
+        printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
+        modprobe overlay
+        modprobe br_netfilter
+        echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
+        echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
+        sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+        sysctl -p
+        mkdir /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+        sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
+        reboot
+        """
+        )
 
-        # c1_node2 = ec2.Instance(
-        #     self, "c1-node2",
-        #     instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
-        #     instance_size=ec2.InstanceSize.MICRO),
-        #     machine_image=ec2.MachineImage.generic_linux({
-        #         "us-east-2": "ami-0d1b5a8c13042c939",
-        #     }),
-        #     vpc=my_vpc,
-        #     key_pair=keyPair,
-        #     vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
-        #     user_data_causes_replacement=True,
-        #     user_data=user_data
-        # )
+        c1_node2 = ec2.Instance(
+            self, "c1-node2",
+            instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
+            instance_size=ec2.InstanceSize.MICRO),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-2": "ami-0d1b5a8c13042c939",
+            }),
+            vpc=my_vpc,
+            key_pair=keyPair,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            user_data_causes_replacement=True,
+            user_data=user_data
+        )
 
-        # Tags.of(c1_node2).add("Name", "c1-node2")
+        Tags.of(c1_node2).add("Name", "c1-node2")
 
-        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
-        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
-        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
-        # CfnOutput(self, "c1-Node2Ip", value=c1_node2.instance_public_ip)
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
+        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+        CfnOutput(self, "c1-Node2Ip", value=c1_node2.instance_public_ip)
 
-        # user_data = ec2.UserData.for_linux()
-        # user_data.add_commands(f"""
-        # hostname c1-node3
-        # echo 'c1-node3' > /etc/hostname
-        # add-apt-repository -y ppa:deadsnakes/ppa
-        # apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
-        # apt update -y
-        # apt upgrade -y
-        # sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
-        # sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
-        # systemctl restart sshd
-        # printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
-        # modprobe overlay
-        # modprobe br_netfilter
-        # echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
-        # echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
-        # sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-        # sysctl -p
-        # mkdir /etc/containerd
-        # containerd config default | tee /etc/containerd/config.toml
-        # sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
-        # curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        # echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-        # apt update -y
-        # apt install -y kubelet kubeadm kubectl
-        # apt-mark hold kubelet kubeadm kubectl containerd
-        # reboot
-        # """
-        # )
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(f"""
+        hostname c1-node3
+        echo 'c1-node3' > /etc/hostname
+        add-apt-repository -y ppa:deadsnakes/ppa
+        apt install -y python3.10 python3-pip python3-apt containerd apt-transport-https ca-certificates curl gpg
+        apt update -y
+        apt upgrade -y
+        sed -i 's/^#\s*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^KbdInteractiveAuthentication.*$/#KbdInteractiveAuthentication no/' /etc/ssh/sshd_config
+        systemctl restart sshd
+        printf 'overlay\nbr_netfilter' > /etc/modules-load.d/k8s.conf
+        modprobe overlay
+        modprobe br_netfilter
+        echo 'net.bridge.bridge-nf-call-iptables=1' | tee -a /etc/sysctl.conf
+        echo 'net.bridge.bridge-nf-call-ip6tables=1' | tee -a /etc/sysctl.conf
+        sed -i 's/^#net.ipv4.ip_forward.*$/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+        sysctl -p
+        mkdir /etc/containerd
+        containerd config default | tee /etc/containerd/config.toml
+        sed -i 's/            SystemdCgroup = false/            SystemdCgroup = true/' /etc/containerd/config.toml
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+        apt update -y
+        apt install -y kubelet kubeadm kubectl
+        apt-mark hold kubelet kubeadm kubectl containerd
+        reboot
+        """
+        )
 
-        # c1_node3 = ec2.Instance(
-        #     self, "c1-node3",
-        #     instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
-        #     instance_size=ec2.InstanceSize.MICRO),
-        #     machine_image=ec2.MachineImage.generic_linux({
-        #         "us-east-2": "ami-0d1b5a8c13042c939",
-        #     }),
-        #     vpc=my_vpc,
-        #     key_pair=keyPair,
-        #     vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
-        #     user_data_causes_replacement=True,
-        #     user_data=user_data
-        # )
+        c1_node3 = ec2.Instance(
+            self, "c1-node3",
+            instance_type=ec2.InstanceType.of(instance_class=ec2.InstanceClass.T2,
+            instance_size=ec2.InstanceSize.MICRO),
+            machine_image=ec2.MachineImage.generic_linux({
+                "us-east-2": "ami-0d1b5a8c13042c939",
+            }),
+            vpc=my_vpc,
+            key_pair=keyPair,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            user_data_causes_replacement=True,
+            user_data=user_data
+        )
 
-        # Tags.of(c1_node3).add("Name", "c1-node3")
+        Tags.of(c1_node3).add("Name", "c1-node3")
 
-        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
-        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
-        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
-        # CfnOutput(self, "c1-Node3Ip", value=c1_node3.instance_public_ip)
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
+        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+        CfnOutput(self, "c1-Node3Ip", value=c1_node3.instance_public_ip)

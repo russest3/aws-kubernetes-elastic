@@ -30,8 +30,8 @@
     - { "src": "vpn_stack.py.j2", "dst": "cdk_workspace/cdk_workspace/vpn_stack.py" }
     - { "src": "app.py.j2", "dst": "cdk_workspace/app.py" }
 
-# - name: 'Run cdk deploy --- There will be a delay up to 5 minutes before there is output...'
-#   ansible.builtin.shell:
-#     cmd: "cdk deploy --require-approval never"
-#     chdir: "cdk_workspace"
+- name: 'Run cdk deploy --- There will be a delay up to 5 minutes before there is output...'
+  ansible.builtin.shell:
+    cmd: "cdk deploy --require-approval never"
+    chdir: "cdk_workspace"
 ...
