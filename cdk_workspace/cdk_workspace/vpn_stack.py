@@ -25,14 +25,14 @@ class VPNStack(NestedStack):
                     subnet_type=ec2.SubnetType.PUBLIC,
                     cidr_mask=24
                 ),
-                ec2.SubnetConfiguration(
-                    name="PrivateWithEgressSubnet",
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
-                    cidr_mask=24
-                ),
+                # ec2.SubnetConfiguration(
+                #     name="PrivateWithEgressSubnet",
+                #     subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                #     cidr_mask=24
+                # ),
                 ec2.SubnetConfiguration(
                     name="PrivateVPNsubnet",
-                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED,
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                     cidr_mask=24
                 )
             ]
@@ -77,11 +77,11 @@ class VPNStack(NestedStack):
             allow_all_outbound=True
         )
 
-        # Add an ingress rule to allow HTTPS traffic from anywhere
+        # Add an ingress rule to allow SSH traffic from anywhere
         vpn_endpoint_sg.add_ingress_rule(
             peer=ec2.Peer.any_ipv4(),
-            connection=ec2.Port.tcp(443),
-            description="Allow HTTPS traffic"
+            connection=ec2.Port.tcp(22),
+            description="Allow SSH traffic"
         )
 
         # Create a Client VPN endpoint
@@ -107,11 +107,11 @@ class VPNStack(NestedStack):
             dns_servers=["8.8.8.8", "8.8.4.4"],
         )
 
-        private_subnets = self.my_vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_ISOLATED)
+        public_subnets = self.my_vpc.select_subnets(subnet_type=ec2.SubnetType.PUBLIC)
 
         cfn_client_vpn_target_network_association = ec2.CfnClientVpnTargetNetworkAssociation(self, "MyCfnClientVpnTargetNetworkAssociation",
             client_vpn_endpoint_id=client_vpn_endpoint.ref,
-            subnet_id=private_subnets.subnet_ids[0]
+            subnet_id=public_subnets.subnet_ids[0]
         )
 
         # Create authorization rule
@@ -120,15 +120,6 @@ class VPNStack(NestedStack):
             authorize_all_groups=True,
             target_network_cidr=self.my_vpc.vpc_cidr_block
         )
-
-        # vpc_endpoint = self.my_vpc.add_interface_endpoint("ClientVpnEndpoint", service=ec2.InterfaceVpcEndpointAwsService.S3)
-        # route_table = self.my_vpc.private_subnets[0].route_table
-
-        # ec2.CfnRoute(self, "RouteToVpce",
-        #     route_table_id=route_table.route_table_id,
-        #     destination_cidr_block="10.100.0.0/22",
-        #     vpc_endpoint_id=vpc_endpoint.vpc_endpoint_id,
-        # )
 
         # Output the VPN endpoint ID
         CfnOutput(self, "ClientVpnEndpointId",

@@ -25,14 +25,14 @@ class VPNStack(NestedStack):
                     subnet_type=ec2.SubnetType.PUBLIC,
                     cidr_mask=24
                 ),
-                ec2.SubnetConfiguration(
-                    name="PrivateWithEgressSubnet",
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
-                    cidr_mask=24
-                ),
+                # ec2.SubnetConfiguration(
+                #     name="PrivateWithEgressSubnet",
+                #     subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                #     cidr_mask=24
+                # ),
                 ec2.SubnetConfiguration(
                     name="PrivateVPNsubnet",
-                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED,
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                     cidr_mask=24
                 )
             ]
@@ -107,11 +107,11 @@ class VPNStack(NestedStack):
             dns_servers=["8.8.8.8", "8.8.4.4"],
         )
 
-        private_subnets = self.my_vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_ISOLATED)
+        public_subnets = self.my_vpc.select_subnets(subnet_type=ec2.SubnetType.PUBLIC)
 
         cfn_client_vpn_target_network_association = ec2.CfnClientVpnTargetNetworkAssociation(self, "MyCfnClientVpnTargetNetworkAssociation",
             client_vpn_endpoint_id=client_vpn_endpoint.ref,
-            subnet_id=private_subnets.subnet_ids[0]
+            subnet_id=public_subnets.subnet_ids[0]
         )
 
         # Create authorization rule
@@ -120,8 +120,6 @@ class VPNStack(NestedStack):
             authorize_all_groups=True,
             target_network_cidr=self.my_vpc.vpc_cidr_block
         )
-
-        # Do I need a route table entry so instances can reach the vpn subnet?
 
         # Output the VPN endpoint ID
         CfnOutput(self, "ClientVpnEndpointId",

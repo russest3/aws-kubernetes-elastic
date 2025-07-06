@@ -74,10 +74,10 @@ class CdkWorkspaceStack(NestedStack):
 
         # Allowing traffic to the c1_cp1 server
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(80), "Allow HTTP traffic to c1-cp1")
-        c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to c1-cp1")
+        # c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to c1-cp1")
         c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(443), "Allow HTTPS traffic to c1-cp1")
-        c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(6443), "Allow HTTP/6443 for kubeapi traffic to c1-cp1")
-        c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow HTTP/8443 for kubernetes dashboard traffic to c1-cp1")
+        # c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(6443), "Allow HTTP/6443 for kubeapi traffic to c1-cp1")
+        # c1_cp1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow HTTP/8443 for kubernetes dashboard traffic to c1-cp1")
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(f"""
@@ -125,11 +125,12 @@ class CdkWorkspaceStack(NestedStack):
 
         Tags.of(c1_node1).add("Name", "c1-node1")
 
-        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
-        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
-        c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
+        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
+        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(31987), "Allow Kubernetes Dashboard traffic to worker node")
+        # c1_node1.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+
         CfnOutput(self, "c1-Node1Ip", value=c1_node1.instance_public_ip)
 
         user_data = ec2.UserData.for_linux()
@@ -178,11 +179,11 @@ class CdkWorkspaceStack(NestedStack):
 
         Tags.of(c1_node2).add("Name", "c1-node2")
 
-        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
-        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
-        c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
+        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
+        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(31987), "Allow Kubernetes Dashboard traffic to worker node")
+        # c1_node2.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
         CfnOutput(self, "c1-Node2Ip", value=c1_node2.instance_public_ip)
 
         user_data = ec2.UserData.for_linux()
@@ -231,9 +232,9 @@ class CdkWorkspaceStack(NestedStack):
 
         Tags.of(c1_node3).add("Name", "c1-node3")
 
-        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
-        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
-        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
-        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(8443), "Allow Kubernetes Dashboard traffic to worker node")
-        c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
+        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(22), "Allow SSH traffic to worker node")
+        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10250), "Allow control plane traffic to worker node")
+        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(10256), "Allow LB traffic to worker node")
+        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(31987), "Allow Kubernetes Dashboard traffic to worker node")
+        # c1_node3.connections.allow_from_any_ipv4(ec2.Port.tcp(9200), "Allow ElasticSearch traffic to worker node")
         CfnOutput(self, "c1-Node3Ip", value=c1_node3.instance_public_ip)

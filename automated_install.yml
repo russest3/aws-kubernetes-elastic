@@ -70,15 +70,15 @@
         _rerun_input: 'y'
       when: _p.stat.exists == false
 
-  tasks:
-    - name: 'Include CDK tasks'
-      ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
-      when: "_rerun_input == 'y'"
+  # tasks:
+  #   - name: 'Include CDK tasks'
+  #     ansible.builtin.include_tasks: 'include_tasks/cdk.yml'
+  #     when: "_rerun_input == 'y'"
 
   post_tasks:
-    - name: 'Pause 4 minutes to wait for EC2 instances to get created'
-      ansible.builtin.pause:
-        minutes: 4
+    # - name: 'Pause 4 minutes to wait for EC2 instances to get created'
+    #   ansible.builtin.pause:
+    #     minutes: 4
 
     - name: 'Getting node information...'
       ansible.builtin.include_tasks: 'include_tasks/get_node_info.yml'
